@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- include("partials/head.ejs") %>
+    <script type="module" src="/js/wf.js"></script>
+</head>
+
+<body>
+
+<%- include("partials/header.ejs") %>
+
+<div>
+    <% for (track of song.tracks) { %>
+        <div>
+            <p>
+                <%= track.description %>
+            </p>
+            <p>
+                Created By: <%= track.createdBy %>
+            </p>
+        </div>
+        <div id="waveform-track-<%= track.id %>"
+             class="waveform-track"
+             data-filename="<%= track.filename %>"
+        ></div>
+    <% } %>
+</div>
+<div>
+    <button type="button" id="play-all-button">Play all tracks</button>
+</div>
+<div>
+    <button type="button">Add new track</button>
+    <div class="hidden-div" id="add-track">
+        <div id="waveform-new"></div>
+    </div>
+</div>
+
+</body>
+
+</html>

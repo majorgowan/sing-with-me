@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- include("partials/head.ejs") %>
+</head>
+
+<body>
+
+<%- include("partials/header.ejs") %>
+
+<div class="song-list-div">
+    <table>
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Created by</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <% for (song of songList) { %>
+                <tr>
+                    <td>
+                        <%= song.title %>
+                    </td>
+                    <td>
+                        <%= song.createdBy %>
+                    </td>
+                    <td>
+                        <a href="/song?id=<%= song.id %>">contribute</a>
+                    </td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
+
+    <div class="create-new-song-div">
+        <a href="/song">Create new song!</a>
+    </div>
+</div>
+
+
+</body>
+
+</html>

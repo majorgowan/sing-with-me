@@ -1,0 +1,25 @@
+{
+  "name": "sing-with-me",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Music collaboration app",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Mark Fruman",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1113.0",
+    "@aws-sdk/s3-request-presigner": "^3.1113.0",
+    "@dr.pogodin/csurf": "^1.17.0",
+    "connect-mongo": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.4.2",
+    "ejs": "^6.0.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "mongodb": "^7.2.0"
+  }
+}
