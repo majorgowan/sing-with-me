@@ -1,3 +1,55 @@
+import WaveSurfer from "https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js";
+import RecordPlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/record.esm.js";
+import TimelinePlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/timeline.esm.js";
+
+
+export const makeWaveSurfer = (container, blobUrl) => {
+
+    const wavesurfer = WaveSurfer.create({
+        "container": container,
+        "waveColor": "darkgreen",
+        "progressColor": "olive",
+        "normalize": true,
+        "plugins": [
+            TimelinePlugin.create()
+        ],
+        "url": blobUrl
+    });
+
+    wavesurfer.on("interaction", () => {
+        wavesurfer.playPause();
+    });
+
+    return wavesurfer;
+}
+
+
+export const makeWaveRecorder = async (container, recorder) => {
+    if (recorder) {
+        // destroy() automatically calls stopRecording() and stopMic() internally
+        recorder.destroy();
+        recorder = null;
+    }
+
+    // Create a new Wavesurfer instance
+    const newRecorder = WaveSurfer.create({
+        "container": container,
+        "waveColor": "darkgreen",
+        "progressColor": "olive",
+        "normalize": true,
+        "plugins": [
+            RecordPlugin.create({
+                scrollingWaveform: true, // Optional: scroll waveform while recording
+                renderRecordedAudio: true // Optional: render final audio after stop
+            }),
+            TimelinePlugin.create()
+        ]
+    });
+
+    return newRecorder;
+}
+
+
 export const uploadAudioToS3 = async (audioBlob, fileName) => {
     // 1. Request the presigned URL from your Express server
     const urlResponse = await fetch(`/s3/upload-url?fileName=${encodeURIComponent(fileName)}`, {
@@ -55,7 +107,7 @@ export const loadAudioBlob = async (fileName) => {
     // 2. Fetch the audio data from S3 and convert to Blob
     // The URL is signed, so you can fetch it directly from the client
     const audioResponse = await fetch(url, {
-        method: 'GET'
+        method: "GET"
     });
 
     if (!audioResponse.ok) {

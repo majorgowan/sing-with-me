@@ -23,10 +23,20 @@ router.get("/songlist", async (req, res) => {
         return res.redirect("/");
     }
 
-    const songList = [
-        {"id": 1, "title": "phoenix", "createdBy": "Froggie"},
-        {"id": 2, "title": "time I get to", "createdBy": "Mark"}
-    ];
+    // fetch songlist from Mongo
+    const { dbInstance } = await connectToDatabase(process.env.DB_NAME);
+    const songList = await dbInstance.collection("songs").find(
+        {
+        },
+        {
+            "_id": 1,
+            "title": 1,
+            "createdBy": 1,
+            "dateCreated": 1
+        }
+    ).toArray();
+
+    console.log(songList);
 
     return res.render("songlist", {
         "csrfToken": req.csrfToken(),
@@ -44,19 +54,29 @@ router.get("/song", async (req, res) => {
     const { id } = req.query;
 
     let song;
+    let song0;
 
     if (!id) {
         song = {
             "title": "",
             "tracks": [],
-            "createdBy": req.session.username
+            "bpm": 100,
+            "timeSignature": 4,
+            "createdBy": req.session.username,
+            "date": new Date()
         }
     } else {
         // fetch the song metadata from Mongo and load the song page
-        // const { dbInstance } = await connectToDatabase(process.env.DB_NAME);
-        // song = await dbInstance.collection("songs").find({"_id": toId(id)});
-        song = {
+        const { dbInstance } = await connectToDatabase(process.env.DB_NAME);
+        // const song = await dbInstance.collection("songs").find({"_id": toId(id)});
+        //
+        // console.log(song);
+
+        song0 = {
             "id": id,
+            "title": "By the Time I Get to Phoenix",
+            "bpm": 100,
+            "timeSignature": 4,
             "tracks": [
                 {
                     "id": 1,
@@ -78,7 +98,7 @@ router.get("/song", async (req, res) => {
     return res.render("song", {
         "csrfToken": req.csrfToken(),
         "user": req.session.username,
-        "song": song
+        "song": song0
     });
 });
 

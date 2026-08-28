@@ -1,5 +1,101 @@
+body {
+    background-color: lightgoldenrodyellow;
+    color: #112211;
+}
+
 #visualizer {
     border: 1px solid #ccc;
     background: #ccc;
     border-radius: 16px;
+}
+
+.song-head {
+    width: 80%;
+    padding: 15px;
+    background-color: aliceblue;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+}
+.song-head-row {
+    display: flex;
+    margin: 5px;
+    flex-direction: row;
+}
+.song-head input {
+    padding: 5px;
+    background-color: palegoldenrod;
+    border-radius: 15px;
+    border: none;
+}
+.song-head select {
+    padding: 5px;
+    background-color: palegoldenrod;
+    border-radius: 15px;
+    border: none;
+}
+#bpm-input {
+    width: 60px;
+}
+.swm-button {
+    padding: 10px;
+    background-color: palegoldenrod;
+    border: none;
+    border-radius: 15px;
+    margin: 2px;
+}
+.swm-button:hover {
+    filter: brightness(1.1); /* < 1 = darker, > 1 = lighter */
+    border: 2px solid goldenrod;
+}
+track-column-div {
+    display: flex;
+    flex-direction: column;
+}
+.track-div {
+    width: 80%;
+    display: flex;
+    flex-direction: row;
+    margin: 10px;
+}
+.track-detail {
+    /* width: auto; */
+    flex: 0 0 30%;
+    margin-left: 15px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    background-color: aliceblue;
+    border-radius: 15px;
+}
+.track-detail-head-div {
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 20px;
+}
+.waveform-track {
+    flex: 0 0 70%;  /* don't grow, don't shrink, basis = 60% */
+    padding: 13px;
+    border: 1px solid #ccc;
+    background: peachpuff;
+    border-radius: 20px;
+}
+new-track .waveform-track {
+    background-color: lavenderblush;
+}
+
+song-track, new-track {
+    display: block;
+    width: 100%;
+}
+
+.count-down-div {
+    margin-left: 20px;
+    font-size: xx-large;
+    font-weight: bold;
+    color: darkgreen;
+}
+
+.hidden-div {
+    display: none;
 }

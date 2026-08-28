@@ -53,6 +53,7 @@ router.get("/playback-url", async (req, res) => {
     });
 
     const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+
     return res.json({ url });
 });
 
