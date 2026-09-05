@@ -12,25 +12,56 @@
 <%- include("partials/header.ejs") %>
 
 <div class="song-head">
+    <input type="hidden" id="song-id" value="<%- song.id ? song.id  : ""%>">
     <div class="song-head-row">
-        <label for="song-title">Title:</label>
-        <input type="text" id="song-title" value="<%= song.title %>" placeholder="Song title">
+        <label for="song-title-input">Title:&nbsp;</label>
+        <input type="text" id="song-title-input" value="<%= song.title %>" placeholder="Song title">
     </div>
     <div class="song-head-row">
-        <label for="bpm-input">Beats per minute:</label>
-        <input type="number" id="bpm-input" value="<%= song.bpm %>">
-        <div>
+        <label for="created-by-input">Created by:&nbsp</label>
+        <input type="text" id="created-by-input" value="<%= song.createdBy %>" readonly>
+    </div>
+    <div class="song-head-row">
+        <div class="song-head-subrow">
+            <label for="bpm-input">Beats per minute:&nbsp;</label>
+            <input type="number" id="bpm-input" value="<%= song.bpm %>">
+        </div>
+        &emsp; &emsp;
+        <div class="song-head_subrow">
             <select id="time-select" value="<%= song.timeSignature %>">
                 <option value="2" selected="selected">2</option>
                 <option value="3" selected="selected">3</option>
                 <option value="4" selected="selected">4</option>
-            </select><label for="time-select">/ 4 time</label>
+            </select><label for="time-select">&nbsp;/ 4 time</label>
+        </div>
+    </div>
+    <div class="song-head-row">
+        <div class="song-head-subrow">
+            <input type="checkbox" name="play-record" id="play-record-checkbox" checked>
+            <label for="play-record-checkbox">Play other tracks on record</label>
+        </div>
+        &emsp; &emsp;
+        <div class="song-head-subrow">
+            <label for="play-record-volume-slider">Volume:&ensp;</label>
+            <div class="volume-slider-wrapper">
+                <input type="range" id="play-record-volume-slider" min="0" max="100" value="30" list="play-record-vol-ticks">
+                <datalist id="play-record-vol-ticks">
+                    <option value="0"></option>
+                    <option value="25"></option>
+                    <option value="50"></option>
+                    <option value="75"></option>
+                    <option value="100"></option>
+                </datalist>
+            </div>
         </div>
     </div>
     <div class="song-head-row">
         <div>
             <button class="swm-button" type="button" id="play-all-button">Play all tracks</button>
-            <button class="swm-button" type="button" id="add-new-track-button">Add new track</button>
+            <button class="swm-button" type="button"
+                    id="add-new-track-button"
+                    data-user="<%= user %>">Add new track</button>
+            <button class="swm-button" type="button" id="save-song-button">Save Song</button>
             <button class="swm-button" type="button" id="download-song-button">Download Song</button>
         </div>
     </div>
@@ -46,6 +77,7 @@
                 filename="<%= track.filename %>"
                 description="<%= track.description %>"
                 created-by="<%= track.createdBy %>"
+                saved="true"
         ></song-track>
     <% } %>
 </div>

@@ -26,7 +26,7 @@ class SongTrack extends HTMLElement {
                     <div class="track-detail-head-div">
                         <div>
                             <div>
-                                ${description}
+                                <input class="description-input" type="text" value="${description}" ${this.setReadOnly()}>
                             </div>
                             <div>
                                 By: ${createdBy}
@@ -51,11 +51,35 @@ class SongTrack extends HTMLElement {
         if (!filename) return;
         const blob = await loadAudioBlob(filename);
         const blobUrl = URL.createObjectURL(blob);
-        this.wavesurfer = makeWaveSurfer(this.querySelector(".waveform-track"), blobUrl);
+        this.wavesurfer = makeWaveSurfer(this, blobUrl);
     }
 
-    playTrack() {
-        this.wavesurfer.play();
+    getTrackData() {
+        return {
+            "trackId": this.getAttribute("id"),
+            "filename": this.getAttribute("filename"),
+            "description": this.getAttribute("description"),
+            "saved": this.getAttribute("saved"),
+            "createdBy": this.getAttribute("created-by")
+        };
+    }
+
+    setReadOnly() {
+        // saved track can't be edited
+        return "readonly";
+    }
+
+    hasAudio() {
+        return this.wavesurfer.getSrc().startsWith("blob:");
+    }
+
+    playTrack(volume) {
+        if (this.hasAudio()) {
+            if (volume) {
+                this.wavesurfer.setVolume(volume);
+            }
+            this.wavesurfer.play();
+        }
     }
 
     stopTrack() {
@@ -74,6 +98,11 @@ class SongTrack extends HTMLElement {
             } else if (e.target.closest(".stop-track-button")) {
                 e.preventDefault();
                 this.stopTrack();
+            }
+        });
+        this.addEventListener("change", (e) => {
+            if (e.target.closest(".description-input")) {
+                this.setAttribute("description", e.target.value);
             }
         });
     }
@@ -100,8 +129,17 @@ class NewTrack extends SongTrack {
         `;
     }
 
+    async initWaveform() {
+        this.wavesurfer = null;
+    }
+
     async initRecorder() {
-        this.wavesurfer = await makeWaveRecorder(this.querySelector('.waveform-track'), this.wavesurfer);
+        this.wavesurfer = await makeWaveRecorder(this, this.wavesurfer);
+    }
+
+    setReadOnly() {
+        // new track can have description etc. edited
+        return "";
     }
 
     stopTrack() {
@@ -113,6 +151,11 @@ class NewTrack extends SongTrack {
 
     attachListeners() {
         super.attachListeners();
+
+        // prepare to play other tracks
+        const playOtherTracks = document.getElementById("play-record-checkbox").checked;
+        const playOtherTracksVolume = Number(document.getElementById("play-record-volume-slider").value) / 100;
+        const allTracks = document.querySelectorAll("song-track, new-track");
 
         this.addEventListener("click", async (e) => {
             if (e.target.closest(".record-button")) {
@@ -126,22 +169,41 @@ class NewTrack extends SongTrack {
                 };
 
                 // start count down
-                let countDownValue = 4;
+                let countDownValue = Number(document.getElementById("time-select").value);
+                const bpmInput = Number(document.getElementById("bpm-input").value);
                 const countDownDiv = this.querySelector(".count-down-div");
                 countDownDiv.classList.remove("hidden-div");
                 countDownDiv.textContent = countDownValue;
-                const tempo = 1000 * 60 / Math.floor(Math.abs(Number(100)));
+                const tempo = 1000 * 60 / Math.floor(Math.abs(Number(bpmInput)));
                 const countDown = setInterval(async () => {
                     countDownValue--;
                     countDownDiv.textContent = countDownValue;
                     if (countDownValue === 0) {
                         await this.wavesurfer.plugins[0].startRecording(recordingConstraints);
+                        if (playOtherTracks) {
+                            allTracks.forEach((track) => {
+                                if (track !== this) {
+                                    track.playTrack(playOtherTracksVolume);
+                                }
+                            });
+                        }
                         clearInterval(countDown);
                         countDownDiv.classList.add("hidden-div");
                     }
                 }, tempo);
-
+            } else if (e.target.closest(".stop-track-button")) {
+                if (playOtherTracks) {
+                    allTracks.forEach((track) => {
+                        if (track !== this) {
+                            track.stopTrack();
+                        }
+                    });
+                }
+            } else if (e.target.closest(".save-recording-button")) {
+                await uploadAudioToS3(this.recordedBlob, this.getAttribute("filename"));
+                this.setAttribute("saved", "true");
             }
+
         });
     }
 

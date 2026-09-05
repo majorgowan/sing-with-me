@@ -1,6 +1,6 @@
 body {
-    background-color: lightgoldenrodyellow;
-    color: #112211;
+    background-color: rosybrown;
+    color: #104020;
 }
 
 #visualizer {
@@ -21,9 +21,20 @@ body {
     display: flex;
     margin: 5px;
     flex-direction: row;
+    align-items: center;
+}
+.song-head-subdiv {
+    display: flex;
+    flex-direction: row;
+    padding-left: 20px;
+}
+.song-head-subrow {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
 }
 .song-head input {
-    padding: 5px;
+    padding: 5px 10px;
     background-color: palegoldenrod;
     border-radius: 15px;
     border: none;
@@ -34,8 +45,9 @@ body {
     border-radius: 15px;
     border: none;
 }
+
 #bpm-input {
-    width: 60px;
+    width: 40px;
 }
 .swm-button {
     padding: 10px;
@@ -46,7 +58,7 @@ body {
 }
 .swm-button:hover {
     filter: brightness(1.1); /* < 1 = darker, > 1 = lighter */
-    border: 2px solid goldenrod;
+    cursor: pointer;
 }
 track-column-div {
     display: flex;
@@ -58,11 +70,17 @@ track-column-div {
     flex-direction: row;
     margin: 10px;
 }
+.description-input {
+    background-color: aliceblue;
+    border: none;
+    font-size: large;
+}
 .track-detail {
     /* width: auto; */
     flex: 0 0 30%;
     margin-left: 15px;
     padding: 15px;
+    position: relative;  /* to put count-down in corner */
     display: flex;
     flex-direction: column;
     background-color: aliceblue;
@@ -90,8 +108,10 @@ song-track, new-track {
 }
 
 .count-down-div {
-    margin-left: 20px;
-    font-size: xx-large;
+    top: 20px;
+    right: 20px;
+    position: absolute;
+    font-size: xxx-large;
     font-weight: bold;
     color: darkgreen;
 }

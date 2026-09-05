@@ -1,4 +1,5 @@
 import express from "express";
+import crypto from "node:crypto";
 import { connectToDatabase, toId } from "../utils/db.js";
 
 const router = express.Router();
@@ -52,12 +53,14 @@ router.get("/song", async (req, res) => {
         return res.redirect("/");
     }
     const { id } = req.query;
+    console.log("requested id", id);
 
     let song;
     let song0;
 
     if (!id) {
         song = {
+            "id": "",
             "title": "",
             "tracks": [],
             "bpm": 100,
@@ -68,9 +71,8 @@ router.get("/song", async (req, res) => {
     } else {
         // fetch the song metadata from Mongo and load the song page
         const { dbInstance } = await connectToDatabase(process.env.DB_NAME);
-        // const song = await dbInstance.collection("songs").find({"_id": toId(id)});
-        //
-        // console.log(song);
+        song = await dbInstance.collection("songs").findOne({"id": id});
+        console.log(song);
 
         song0 = {
             "id": id,
@@ -98,7 +100,38 @@ router.get("/song", async (req, res) => {
     return res.render("song", {
         "csrfToken": req.csrfToken(),
         "user": req.session.username,
-        "song": song0
+        "song": song
+    });
+});
+
+
+router.post("/savesong", async (req, res) => {
+    if (!req.session.username) {
+        return res.json({"result": "you're not logged in even!!"});
+    }
+
+    const { songInfo } = req.body;
+    console.log(songInfo);
+
+    const songId = songInfo.id || crypto.randomUUID(); // Generate a 64-char token
+    console.log(songId);
+    songInfo.id = songId;
+
+    const { dbInstance } = await connectToDatabase(process.env.DB_NAME);
+    const saveResult = await dbInstance.collection("songs").replaceOne(
+        {
+            "id": songId
+        },
+        songInfo,
+        {
+            "upsert": true
+        }
+    );
+    console.log(saveResult);
+
+    return res.json({
+        "result": saveResult,
+        "songId": songId
     });
 });
 

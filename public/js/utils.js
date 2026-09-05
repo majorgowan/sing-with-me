@@ -3,10 +3,10 @@ import RecordPlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/record.
 import TimelinePlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/timeline.esm.js";
 
 
-export const makeWaveSurfer = (container, blobUrl) => {
+export const makeWaveSurfer = (songTrack, blobUrl) => {
 
     const wavesurfer = WaveSurfer.create({
-        "container": container,
+        "container": songTrack.querySelector(".waveform-track"),
         "waveColor": "darkgreen",
         "progressColor": "olive",
         "normalize": true,
@@ -20,11 +20,15 @@ export const makeWaveSurfer = (container, blobUrl) => {
         wavesurfer.playPause();
     });
 
+    wavesurfer.on("finish", () => {
+        wavesurfer.setVolume(1);
+    })
+
     return wavesurfer;
 }
 
 
-export const makeWaveRecorder = async (container, recorder) => {
+export const makeWaveRecorder = async (newTrack, recorder) => {
     if (recorder) {
         // destroy() automatically calls stopRecording() and stopMic() internally
         recorder.destroy();
@@ -33,7 +37,7 @@ export const makeWaveRecorder = async (container, recorder) => {
 
     // Create a new Wavesurfer instance
     const newRecorder = WaveSurfer.create({
-        "container": container,
+        "container": newTrack.querySelector(".waveform-track"),
         "waveColor": "darkgreen",
         "progressColor": "olive",
         "normalize": true,
@@ -44,6 +48,13 @@ export const makeWaveRecorder = async (container, recorder) => {
             }),
             TimelinePlugin.create()
         ]
+    });
+
+    newRecorder.plugins[0].on("record-end", (blob) => {
+        console.log("finished recording");
+        const recButton = newTrack.querySelector(".save-recording-button");
+        if (recButton) recButton.disabled = false;
+        newTrack.recordedBlob = blob;
     });
 
     return newRecorder;
