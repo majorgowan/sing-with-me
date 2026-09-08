@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import s3Client from "../utils/s3.js";
-import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const router = express.Router();
@@ -54,6 +54,26 @@ router.get("/playback-url", async (req, res) => {
 
     const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
 
+    return res.json({ url });
+});
+
+
+router.get("/delete-url", async (req, res) => {
+    const { fileName } = req.query;
+
+    if (!fileName) {
+        return res.status(400).json({ error: "fileName is required" });
+    }
+
+    const safeFileName = path.basename(fileName);
+    const key = `recordings/${safeFileName}`; // Store in a 'recordings' folder
+
+    const command = new DeleteObjectCommand({
+        "Bucket": process.env.S3_BUCKET_NAME,
+        "Key": key,
+    });
+
+    const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
     return res.json({ url });
 });
 

@@ -1,4 +1,4 @@
-import { loadAudioBlob, uploadAudioToS3, makeWaveSurfer, makeWaveRecorder } from "../utils.js";
+import { loadAudioBlob, uploadAudioToS3, deleteAudioFromS3, makeWaveSurfer, makeWaveRecorder } from "../utils.js";
 
 
 class SongTrack extends HTMLElement {
@@ -11,6 +11,11 @@ class SongTrack extends HTMLElement {
         this.render();
         this.initWaveform();
         this.attachListeners();
+    }
+
+    disconnectedCallback() {
+        clearInterval(this._countDown);
+        clearTimeout(this._confirmTimeout);
     }
 
     render() {
@@ -36,6 +41,8 @@ class SongTrack extends HTMLElement {
                         </div>
                     </div>
                     <div class="track-buttons-div">
+                        <button class="swm-button delete-track-button">Delete</button>
+                        <button class="swm-button confirm-delete-track-button hidden-button">Confirm</div>
                         <div>
                             <button class="swm-button play-track-button" type="button">Play</button>
                             <button class="swm-button stop-track-button" type="button">Stop</button>
@@ -89,7 +96,7 @@ class SongTrack extends HTMLElement {
     }
 
     attachListeners() {
-        this.addEventListener("click", (e) => {
+        this.addEventListener("click", async (e) => {
             if (e.target.closest(".play-track-button")) {
                 e.preventDefault();
                 if (this.wavesurfer) {
@@ -98,6 +105,25 @@ class SongTrack extends HTMLElement {
             } else if (e.target.closest(".stop-track-button")) {
                 e.preventDefault();
                 this.stopTrack();
+            } else if (e.target.closest(".delete-track-button")) {
+                e.preventDefault();
+                const deleteTrackButton = this.querySelector(".delete-track-button");
+                const confirmDeleteTrackButton = this.querySelector(".confirm-delete-track-button");
+                deleteTrackButton.classList.add("hidden-button");
+                confirmDeleteTrackButton.classList.remove("hidden-button");
+                // clear any pending Timeouts (shouldn't happen)
+                if (this._confirmTimeout) clearTimeout(this._confirmTimeout);
+                this._confirmTimeout = setTimeout(() => {
+                    deleteTrackButton.classList.remove("hidden-button");
+                    confirmDeleteTrackButton.classList.add("hidden-button");
+                }, 2000);
+            } else if (e.target.closest(".confirm-delete-track-button")) {
+                e.preventDefault();
+                if (this.getAttribute("saved") === "true") {
+                    await deleteAudioFromS3(this.getAttribute("filename"));
+                }
+                // remove the track from the Song
+                this.remove();
             }
         });
         this.addEventListener("change", (e) => {
@@ -175,7 +201,7 @@ class NewTrack extends SongTrack {
                 countDownDiv.classList.remove("hidden-div");
                 countDownDiv.textContent = countDownValue;
                 const tempo = 1000 * 60 / Math.floor(Math.abs(Number(bpmInput)));
-                const countDown = setInterval(async () => {
+                this._countDown = setInterval(async () => {
                     countDownValue--;
                     countDownDiv.textContent = countDownValue;
                     if (countDownValue === 0) {
@@ -187,7 +213,7 @@ class NewTrack extends SongTrack {
                                 }
                             });
                         }
-                        clearInterval(countDown);
+                        clearInterval(this._countDown);
                         countDownDiv.classList.add("hidden-div");
                     }
                 }, tempo);

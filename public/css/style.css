@@ -10,9 +10,9 @@ body {
 }
 
 .song-head {
-    width: 80%;
-    padding: 15px;
+    width: 70%;
     background-color: aliceblue;
+    padding: 15px;
     border-radius: 15px;
     display: flex;
     flex-direction: column;
@@ -65,10 +65,10 @@ track-column-div {
     flex-direction: column;
 }
 .track-div {
-    width: 80%;
+    width: 90%;
     display: flex;
     flex-direction: row;
-    margin: 10px;
+    margin: 10px 0;
 }
 .description-input {
     background-color: aliceblue;
@@ -92,9 +92,9 @@ track-column-div {
     margin-bottom: 20px;
 }
 .waveform-track {
-    flex: 0 0 70%;  /* don't grow, don't shrink, basis = 60% */
-    padding: 13px;
-    border: 1px solid #ccc;
+    flex: 0 0 60%;  /* don't grow, don't shrink, basis = 60% */
+    padding: 10px;
+    border: 1.5px solid saddlebrown;
     background: peachpuff;
     border-radius: 20px;
 }
@@ -104,7 +104,7 @@ new-track .waveform-track {
 
 song-track, new-track {
     display: block;
-    width: 100%;
+    width: 70%;
 }
 
 .count-down-div {
@@ -115,7 +115,21 @@ song-track, new-track {
     font-weight: bold;
     color: darkgreen;
 }
+.delete-track-button {
+    bottom: 20px;
+    right: 20px;
+    position: absolute;
+}
+.confirm-delete-track-button {
+    bottom: 20px;
+    right: 20px;
+    position: absolute;
+    background-color: tomato;
+}
 
 .hidden-div {
+    display: none;
+}
+.hidden-button {
     display: none;
 }
