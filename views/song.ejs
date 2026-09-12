@@ -4,83 +4,99 @@
 <head>
     <%- include("partials/head.ejs") %>
     <script type="module" src="/js/components/song-track.js"></script>
-    <script type="module" src="/js/wf.js"></script>
+    <script type="module" src="/js/components/song-div.js"></script>
 </head>
 
 <body>
 
 <%- include("partials/header.ejs") %>
 
-<div class="song-head">
-    <input type="hidden" id="song-id" value="<%- song.id ? song.id  : ""%>">
-    <div class="song-head-row">
-        <label for="song-title-input">Title:&nbsp;</label>
-        <input type="text" id="song-title-input" value="<%= song.title %>" placeholder="Song title">
-    </div>
-    <div class="song-head-row">
-        <label for="created-by-input">Created by:&nbsp</label>
-        <input type="text" id="created-by-input" value="<%= song.createdBy %>" readonly>
-    </div>
-    <div class="song-head-row">
-        <div class="song-head-subrow">
-            <label for="bpm-input">Beats per minute:&nbsp;</label>
-            <input type="number" id="bpm-input" value="<%= song.bpm %>">
+<song-div song-id="<%= song.songId %>"
+          song-title="<%= song.title %>"
+          created-by="<%= song.createdBy %>"
+          bpm="<%= song.bpm %>"
+          time-signature="<%= song.timeSignature %>">
+
+    <div class="song-head">
+        <div class="song-head-row">
+            <label class="song-head-label">
+                Title:&nbsp;
+                <input type="text" class="song-title-input" placeholder="Song title">
+            </label>
         </div>
-        &emsp; &emsp;
-        <div class="song-head_subrow">
-            <select id="time-select" value="<%= song.timeSignature %>">
-                <option value="2" selected="selected">2</option>
-                <option value="3" selected="selected">3</option>
-                <option value="4" selected="selected">4</option>
-            </select><label for="time-select">&nbsp;/ 4 time</label>
+        <div class="song-head-row">
+            <label class="created-by-label">
+                Created by:&nbsp
+                <input type="text" class="created-by-input" readonly>
+            </label>
         </div>
-    </div>
-    <div class="song-head-row">
-        <div class="song-head-subrow">
-            <input type="checkbox" name="play-record" id="play-record-checkbox" checked>
-            <label for="play-record-checkbox">Play other tracks on record</label>
+        <div class="song-head-row">
+            <div class="song-head-subrow">
+                <label class="bpm-input-label">
+                    Beats per minute:&nbsp;
+                    <input type="number" class="bpm-input">
+                </label>
+            </div>
+            &emsp; &emsp;
+            <div class="song-head_subrow">
+                <label class="time-signature-label">
+                    <select class="time-signature-select">
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                    </select>
+                    &nbsp;/ 4 time
+                </label>
+            </div>
         </div>
-        &emsp; &emsp;
-        <div class="song-head-subrow">
-            <label for="play-record-volume-slider">Volume:&ensp;</label>
-            <div class="volume-slider-wrapper">
-                <input type="range" id="play-record-volume-slider" min="0" max="100" value="30" list="play-record-vol-ticks">
-                <datalist id="play-record-vol-ticks">
-                    <option value="0"></option>
-                    <option value="25"></option>
-                    <option value="50"></option>
-                    <option value="75"></option>
-                    <option value="100"></option>
-                </datalist>
+        <div class="song-head-row">
+            <div class="song-head-subrow">
+                <label>
+                    <input type="checkbox" name="play-record" class="play-record-checkbox" checked>
+                    Play other tracks on record
+                </label>
+            </div>
+            &emsp; &emsp;
+            <div class="song-head-subrow">
+                <label class="volume-slider-wrapper">
+                    Volume:&ensp;
+                    <input type="range" class="play-record-volume-slider" min="0" max="100" value="30" list="play-record-vol-ticks">
+                    <datalist id="play-record-vol-ticks">
+                        <option value="0"></option>
+                        <option value="25"></option>
+                        <option value="50"></option>
+                        <option value="75"></option>
+                        <option value="100"></option>
+                    </datalist>
+                </label>
+            </div>
+        </div>
+        <div class="song-head-row">
+            <div>
+                <button class="swm-button play-all-button" type="button">Play all tracks</button>
+                <button class="swm-button add-new-track-button" type="button"
+                        data-user="<%= user %>">Add new track</button>
+                <button class="swm-button save-song-button" type="button">Save Song</button>
+                <button class="swm-button download-song-button" type="button">Download Song</button>
             </div>
         </div>
     </div>
-    <div class="song-head-row">
-        <div>
-            <button class="swm-button" type="button" id="play-all-button">Play all tracks</button>
-            <button class="swm-button" type="button"
-                    id="add-new-track-button"
-                    data-user="<%= user %>">Add new track</button>
-            <button class="swm-button" type="button" id="save-song-button">Save Song</button>
-            <button class="swm-button" type="button" id="download-song-button">Download Song</button>
-        </div>
+    <!-- New tracks -->
+    <div class="track-column-div add-new-track-div">
     </div>
-</div>
-<!-- New tracks -->
-<div class="track-column-div" id="add-new-track-div">
-</div>
-<!-- Saved tracks -->
-<div class="track-column-div">
-    <% for (track of song.tracks) { %>
-        <song-track
-                id="<%= track.id %>"
-                filename="<%= track.filename %>"
-                description="<%= track.description %>"
-                created-by="<%= track.createdBy %>"
-                saved="true"
-        ></song-track>
-    <% } %>
-</div>
+    <!-- Saved tracks -->
+    <div class="track-column-div">
+        <% for (track of song.tracks) { %>
+            <song-track trackId="<%= track.trackId %>"
+                        filename="<%= track.filename %>"
+                        description="<%= track.description %>"
+                        created-by="<%= track.createdBy %>"
+                        saved="true">
+            </song-track>
+        <% } %>
+    </div>
+
+</song-div>
 
 </body>
 

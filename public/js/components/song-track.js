@@ -19,7 +19,7 @@ class SongTrack extends HTMLElement {
     }
 
     render() {
-        const trackId = this.getAttribute("id");
+        const trackId = this.getAttribute("trackId");
         const filename = this.getAttribute("filename");
         const description = this.getAttribute("description");
         const createdBy = this.getAttribute("created-by");
@@ -63,7 +63,7 @@ class SongTrack extends HTMLElement {
 
     getTrackData() {
         return {
-            "trackId": this.getAttribute("id"),
+            "trackId": this.getAttribute("trackId"),
             "filename": this.getAttribute("filename"),
             "description": this.getAttribute("description"),
             "saved": this.getAttribute("saved"),
@@ -178,10 +178,13 @@ class NewTrack extends SongTrack {
     attachListeners() {
         super.attachListeners();
 
+        const parentSong = this.closest("song-div");
+
         // prepare to play other tracks
-        const playOtherTracks = document.getElementById("play-record-checkbox").checked;
-        const playOtherTracksVolume = Number(document.getElementById("play-record-volume-slider").value) / 100;
-        const allTracks = document.querySelectorAll("song-track, new-track");
+        const playOtherTracks = parentSong.querySelector(".play-record-checkbox");
+        const playOtherTracksVolume = Number(parentSong.querySelector(".play-record-volume-slider").value / 100);
+        const bpmInput = parentSong.querySelector(".bpm-input");
+        const timeSignatureSelect = parentSong.querySelector(".time-signature-select");
 
         this.addEventListener("click", async (e) => {
             if (e.target.closest(".record-button")) {
@@ -195,19 +198,18 @@ class NewTrack extends SongTrack {
                 };
 
                 // start count down
-                let countDownValue = Number(document.getElementById("time-select").value);
-                const bpmInput = Number(document.getElementById("bpm-input").value);
+                let countDownValue = Number(timeSignatureSelect.value);
                 const countDownDiv = this.querySelector(".count-down-div");
                 countDownDiv.classList.remove("hidden-div");
                 countDownDiv.textContent = countDownValue;
-                const tempo = 1000 * 60 / Math.floor(Math.abs(Number(bpmInput)));
+                const tempo = 1000 * 60 / Math.floor(Math.abs(Number(bpmInput.value)));
                 this._countDown = setInterval(async () => {
                     countDownValue--;
                     countDownDiv.textContent = countDownValue;
                     if (countDownValue === 0) {
                         await this.wavesurfer.plugins[0].startRecording(recordingConstraints);
                         if (playOtherTracks) {
-                            allTracks.forEach((track) => {
+                            parentSong.tracks.forEach((track) => {
                                 if (track !== this) {
                                     track.playTrack(playOtherTracksVolume);
                                 }
@@ -219,7 +221,7 @@ class NewTrack extends SongTrack {
                 }, tempo);
             } else if (e.target.closest(".stop-track-button")) {
                 if (playOtherTracks) {
-                    allTracks.forEach((track) => {
+                    parentSong.tracks.forEach((track) => {
                         if (track !== this) {
                             track.stopTrack();
                         }

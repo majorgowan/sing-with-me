@@ -31,6 +31,7 @@ router.get("/songlist", async (req, res) => {
         },
         {
             "_id": 1,
+            "songId": 1,
             "title": 1,
             "createdBy": 1,
             "dateCreated": 1
@@ -52,15 +53,15 @@ router.get("/song", async (req, res) => {
     if (!req.session.username) {
         return res.redirect("/");
     }
-    const { id } = req.query;
-    console.log("requested id", id);
+    const { songId } = req.query;
+    console.log("requested song id", songId);
 
     let song;
     let song0;
 
-    if (!id) {
+    if (!songId) {
         song = {
-            "id": "",
+            "songId": "",
             "title": "",
             "tracks": [],
             "bpm": 100,
@@ -71,11 +72,11 @@ router.get("/song", async (req, res) => {
     } else {
         // fetch the song metadata from Mongo and load the song page
         const { dbInstance } = await connectToDatabase(process.env.DB_NAME);
-        song = await dbInstance.collection("songs").findOne({"id": id});
+        song = await dbInstance.collection("songs").findOne({"songId": songId});
         console.log(song);
 
         song0 = {
-            "id": id,
+            "songId": songId,
             "title": "By the Time I Get to Phoenix",
             "bpm": 100,
             "timeSignature": 4,
@@ -113,14 +114,14 @@ router.post("/savesong", async (req, res) => {
     const { songInfo } = req.body;
     console.log(songInfo);
 
-    const songId = songInfo.id || crypto.randomUUID(); // Generate a 64-char token
+    const songId = songInfo.songId || crypto.randomUUID(); // Generate a 64-char token
     console.log(songId);
-    songInfo.id = songId;
+    songInfo.songId = songId;
 
     const { dbInstance } = await connectToDatabase(process.env.DB_NAME);
     const saveResult = await dbInstance.collection("songs").replaceOne(
         {
-            "id": songId
+            "songId": songId
         },
         songInfo,
         {
