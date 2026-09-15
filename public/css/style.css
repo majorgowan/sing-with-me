@@ -28,6 +28,10 @@ body {
     justify-content: center;
 }
 
+.song-space {
+    position: relative;
+}
+
 .song-head {
     width: 70%;
     background-color: aliceblue;
@@ -84,7 +88,7 @@ body {
     filter: brightness(1.1); /* < 1 = darker, > 1 = lighter */
     cursor: pointer;
 }
-track-column-div {
+.track-column-div {
     display: flex;
     flex-direction: column;
 }
@@ -128,7 +132,10 @@ new-track .waveform-track {
 
 song-track, new-track {
     display: block;
-    width: 70%;
+    position: relative;
+    left: auto;
+    overflow: clip;
+    cursor: grab;
 }
 
 .count-down-div {

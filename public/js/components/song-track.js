@@ -96,6 +96,9 @@ class SongTrack extends HTMLElement {
     }
 
     attachListeners() {
+        let offsetX;
+        let dragging = false;
+
         this.addEventListener("click", async (e) => {
             if (e.target.closest(".play-track-button")) {
                 e.preventDefault();
@@ -125,6 +128,23 @@ class SongTrack extends HTMLElement {
                 // remove the track from the Song
                 this.remove();
             }
+        });
+        this.addEventListener("pointerdown", (e) => {
+            dragging = true;
+            this.style.cursor = "grabbing";
+            console.log("I've been grabbed yo!!!!!");
+            offsetX = e.clientX - this.offsetLeft;
+            console.log(offsetX, e.clientX, this.offsetLeft, this.style.left);
+        });
+        this.addEventListener("pointerup", (e) => {
+            dragging = false;
+            this.style.cursor = "grab";
+            console.log("It's okay she let go!!!!!", e.clientX - offsetX);
+        });
+        this.addEventListener("pointermove", (e) => {
+            if (!dragging) return;
+            let x = Math.max(0, e.clientX - offsetX);
+            this.style.left = x + "px";
         });
         this.addEventListener("change", (e) => {
             if (e.target.closest(".description-input")) {

@@ -24,7 +24,7 @@ const { client } = await connectToDatabase(process.env.DB_NAME);
 
 // Use session-based authentication
 if (process.env.NODE_ENV === "production" || process.env.USE_PROXY === "true") {
-    app.set("trust proxy", 1);
+    app.set("trust_proxy", 1);
 }
 
 const isSecure = app.get("trust_proxy") === 1;
