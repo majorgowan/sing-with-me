@@ -3,10 +3,29 @@ body {
     color: #104020;
 }
 
-#visualizer {
-    border: 1px solid #ccc;
-    background: #ccc;
-    border-radius: 16px;
+.login-form {
+    display: flex;
+    flex-direction: column;
+}
+.login-form label {
+    display: inline-block;
+    text-align: right;
+    font-weight: bold;
+}
+.login-form input {
+    padding: 5px 10px;
+    background-color: palegoldenrod;
+    border-radius: 15px;
+    border: none;
+}
+.form-row {
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+}
+.form-button-div {
+    display: flex;
+    justify-content: center;
 }
 
 .song-head {

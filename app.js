@@ -6,6 +6,7 @@ import csrf from "@dr.pogodin/csurf";
 import cookieParser from "cookie-parser";
 import routes from "./routes/routes.js";
 import s3Routes from "./routes/s3_routes.js";
+import authRoutes from "./routes/auth_routes.js";
 import { connectToDatabase } from "./utils/db.js";
 import { handleGlobalError, handleCsrfError, handleMongoError } from "./routes/errors.js";
 
@@ -61,6 +62,7 @@ app.use(express.static("public"));
 // Routes
 app.use("/", routes);
 app.use("/s3", s3Routes);
+app.use("/", authRoutes);
 
 // Error handlers
 app.use(handleCsrfError);

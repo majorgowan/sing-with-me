@@ -6,9 +6,10 @@ const router = express.Router();
 
 
 router.get("/", async (req, res) => {
-    return res.render("index", {
-        "csrfToken": req.csrfToken()
-    });
+    if (req.session.username) {
+        return res.redirect("/songlist");
+    }
+    return res.redirect("/login");
 });
 
 
