@@ -9,6 +9,7 @@ export const makeWaveSurfer = (songTrack, blobUrl) => {
         "container": songTrack.querySelector(".waveform-track"),
         "waveColor": "darkgreen",
         "progressColor": "olive",
+        "interact": false,
         "normalize": true,
         "plugins": [
             TimelinePlugin.create()
@@ -16,12 +17,17 @@ export const makeWaveSurfer = (songTrack, blobUrl) => {
         "url": blobUrl
     });
 
-    wavesurfer.on("interaction", () => {
-        wavesurfer.playPause();
-    });
+    // wavesurfer.on("interaction", () => {
+    //     wavesurfer.playPause();
+    // });
 
     wavesurfer.on("finish", () => {
         wavesurfer.setVolume(1);
+    })
+
+    wavesurfer.on("ready", () => {
+        songTrack.setDuration(wavesurfer.getDuration());
+        console.log(`Ready, duration: ${songTrack.duration}`);
     })
 
     return wavesurfer;
@@ -40,6 +46,7 @@ export const makeWaveRecorder = async (newTrack, recorder) => {
         "container": newTrack.querySelector(".waveform-track"),
         "waveColor": "darkgreen",
         "progressColor": "olive",
+        "interact": false,
         "normalize": true,
         "plugins": [
             RecordPlugin.create({
@@ -55,6 +62,10 @@ export const makeWaveRecorder = async (newTrack, recorder) => {
         const recButton = newTrack.querySelector(".save-recording-button");
         if (recButton) recButton.disabled = false;
         newTrack.recordedBlob = blob;
+    });
+
+    newRecorder.on("ready", () => {
+        newTrack.setDuration(newRecorder.getDuration());
     });
 
     return newRecorder;

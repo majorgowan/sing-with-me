@@ -11,6 +11,8 @@ class SongTrack extends HTMLElement {
         this.render();
         this.initWaveform();
         this.attachListeners();
+        this.selectStartPct = null;
+        this.selectEndPct = null;
     }
 
     disconnectedCallback() {
@@ -26,7 +28,10 @@ class SongTrack extends HTMLElement {
 
         this.innerHTML = `
             <div class="track-div" data-track-id="${trackId}">
-                <div class="waveform-track" data-filename="${filename}"></div>
+                <div class="waveform-wrapper">
+                    <div class="waveform-track" data-filename="${filename}"></div>
+                    <div class="waveform-range-select hidden-div"></div>
+                </div>
                 <div class="track-detail">
                     <div class="track-detail-head-div">
                         <div>
@@ -80,10 +85,18 @@ class SongTrack extends HTMLElement {
         return this.wavesurfer.getSrc().startsWith("blob:");
     }
 
+    setDuration(duration) {
+        this.duration = duration;
+        this.querySelector(".waveform-track").style.width = (40 * duration) + "px";
+    }
+
     playTrack(volume) {
         if (this.hasAudio()) {
             if (volume) {
                 this.wavesurfer.setVolume(volume);
+            }
+            if (this.selectStartPct && this.selectEndPct) {
+                this.wavesurfer.play(this.selectStartPct * this.duration, this.selectEndPct * this.duration);
             }
             this.wavesurfer.play();
         }
@@ -97,7 +110,16 @@ class SongTrack extends HTMLElement {
 
     attachListeners() {
         let offsetX;
+        // for moving the track
         let dragging = false;
+        // for selecting a range in the track
+        let selecting = false;
+        // flag to distinguish click from range set
+        let moved = false;
+
+        let selectLeft, selectRight;
+        const rangeSelectDiv = this.querySelector(".waveform-range-select");
+        const waveformTrack = this.querySelector(".waveform-track");
 
         this.addEventListener("click", async (e) => {
             if (e.target.closest(".play-track-button")) {
@@ -130,21 +152,66 @@ class SongTrack extends HTMLElement {
             }
         });
         this.addEventListener("pointerdown", (e) => {
-            dragging = true;
-            this.style.cursor = "grabbing";
-            console.log("I've been grabbed yo!!!!!");
-            offsetX = e.clientX - this.offsetLeft;
-            console.log(offsetX, e.clientX, this.offsetLeft, this.style.left);
+            if (e.target.closest(".track-detail")) {
+                e.preventDefault();
+                dragging = true;
+                this.style.cursor = "grabbing";
+                console.log("I've been grabbed yo!!!!!");
+                offsetX = e.clientX - this.offsetLeft;
+                console.log(offsetX, e.clientX, this.offsetLeft, this.style.left);
+            } else if (e.target.closest(".waveform-track") || e.target.closest(".waveform-range-select")) {
+                e.preventDefault();
+                // set moved to false until pointer moves (i.e. not just a click)
+                moved = false;
+                selecting = true;
+                // set selecting start
+                const waveformTrackRect = waveformTrack.getBoundingClientRect();
+                selectLeft = e.clientX - waveformTrackRect.left;
+            }
         });
         this.addEventListener("pointerup", (e) => {
-            dragging = false;
-            this.style.cursor = "grab";
-            console.log("It's okay she let go!!!!!", e.clientX - offsetX);
+            if (e.target.closest(".track-detail")) {
+                dragging = false;
+                this.style.cursor = null;
+                console.log("It's okay she let go!!!!!", e.clientX - offsetX);
+            } else if (e.target.closest(".waveform-track") || e.target.closest(".waveform-range-select")) {
+                e.preventDefault();
+                selecting = false;
+                if (moved) {
+                    // fix the selection
+                    // calculate start/end times
+                    // enable editing buttons (clip, crop)
+                    const waveformTrackRect = waveformTrack.getBoundingClientRect();
+                    this.selectStartPct = selectLeft / waveformTrackRect.width;
+                    this.selectEndPct = selectRight / waveformTrackRect.width;
+                    console.log(this.selectStartPct * this.duration, this.selectEndPct * this.duration);
+                } else {
+                    // treat as a click: clear selection if any
+                    e.preventDefault();
+                    rangeSelectDiv.classList.add("hidden-div");
+                    selectLeft = null;
+                    selectRight = null;
+                    this.selectStartPct = null;
+                    this.selectEndPct = null;
+                    rangeSelectDiv.style.left = 0;
+                    rangeSelectDiv.style.width = 0;
+                }
+            }
         });
         this.addEventListener("pointermove", (e) => {
-            if (!dragging) return;
-            let x = Math.max(0, e.clientX - offsetX);
-            this.style.left = x + "px";
+            if (selecting) {
+                e.preventDefault();
+                moved = true;
+                const waveformTrackRect = waveformTrack.getBoundingClientRect();
+                selectRight = Math.min(parseFloat(waveformTrack.style.width), e.clientX - waveformTrackRect.left);
+                rangeSelectDiv.classList.remove("hidden-div");
+                rangeSelectDiv.style.left = selectLeft + "px";
+                rangeSelectDiv.style.width = (selectRight - selectLeft) + "px";
+            } else if (e.target.closest(".track-detail")) {
+                if (!dragging) return;
+                let x = Math.max(0, e.clientX - offsetX);
+                this.style.left = x + "px";
+            }
         });
         this.addEventListener("change", (e) => {
             if (e.target.closest(".description-input")) {
