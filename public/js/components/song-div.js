@@ -30,8 +30,8 @@ class Song extends HTMLElement {
                 });
             } else if (e.target.closest(".add-new-track-button")) {
                 e.preventDefault();
-                console.log(e.target.dataset.user);
-                const userName = e.target.dataset.user;
+                console.log(e.target.dataset.username);
+                const userName = e.target.dataset.username;
                 const addNewTrackDiv = this.querySelector(".add-new-track-div");
                 const timeStamp = `${Date.now()}`;
                 // create new track (NewTrack object) and add it to the DOM

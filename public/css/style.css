@@ -1,6 +1,6 @@
 body {
-    background-color: rosybrown;
-    color: #104020;
+    background-color: #7191df;
+    color: #101020;
 }
 
 .login-form {
@@ -106,7 +106,7 @@ body {
 .track-detail {
     /* width: auto; */
     flex: 0 0 30%;
-    margin-left: 15px;
+    margin-left: 12px;
     padding: 15px;
     position: relative;  /* to put count-down in corner */
     display: flex;
@@ -118,6 +118,15 @@ body {
     display: flex;
     flex-direction: row;
     margin-bottom: 20px;
+}
+.track-edit-div {
+    display: flex;
+    flex-direction: column;
+    margin-left: 12px;
+    padding: 15px;
+    width: 100px;
+    background-color: aliceblue;
+    border-radius: 15px;
 }
 .waveform-track {
     /* flex: 0 0 60%;  /* don't grow, don't shrink, basis = 60% */
@@ -175,4 +184,7 @@ song-track, new-track {
 }
 .hidden-button {
     display: none;
+}
+.invisible-button {
+    visibility: hidden;
 }

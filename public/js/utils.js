@@ -1,6 +1,7 @@
 import WaveSurfer from "https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js";
 import RecordPlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/record.esm.js";
 import TimelinePlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/timeline.esm.js";
+import encode from "https://esm.sh/@audio/encode"
 
 
 export const makeWaveSurfer = (songTrack, blobUrl) => {
@@ -171,4 +172,40 @@ export const loadAudioBlob = async (fileName) => {
     console.log("Audio loaded from S3!");
 
     return audioBlob;
+};
+
+
+export const clipTrack = async (songTrack, start, end) => {
+
+    const audioBuffer = songTrack.wavesurfer.getDecodedData();
+
+    const channelData = Array.from({ length: audioBuffer.numberOfChannels },
+        (_, i) => audioBuffer.getChannelData(i));
+
+    console.log(channelData);
+    // TODO: do this sort of thing:
+    //
+    // import encode from 'https://esm.sh/@audio/encode'
+    //
+    // const audioBuffer = wavesurfer.getDecodedData()
+    //
+    // // Build channelData (Float32Array[]) from the AudioBuffer
+    // const channelData = Array.from({ length: audioBuffer.numberOfChannels },
+    //     (_, i) => audioBuffer.getChannelData(i))
+    //
+    // // Manipulate samples here (e.g. apply a filter, change gain, etc.)
+    // // ...
+    //
+    // // Encode to whatever format you want
+    // const bytes = await encode.mp3(channelData, {
+    //     sampleRate: audioBuffer.sampleRate,
+    //     bitrate: 128
+    // })
+    //
+    // // Wrap in a blob and reload
+    // const blob = new Blob([bytes], { type: 'audio/mpeg' })
+    // const url = URL.createObjectURL(blob)
+    // wavesurfer.load(url)
+    //
+
 };

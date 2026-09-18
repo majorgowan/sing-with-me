@@ -43,10 +43,10 @@ router.get("/songlist", async (req, res) => {
 
     return res.render("songlist", {
         "csrfToken": req.csrfToken(),
-        "user": req.session.username,
+        "username": req.session.username,
         "songList": songList
     });
-    //return res.json({"user": req.session.username, "songs": [{"title": "phoenix"}, {"title": "time I get to"}]});
+    //return res.json({"username": req.session.username, "songs": [{"title": "phoenix"}, {"title": "time I get to"}]});
 });
 
 
@@ -101,7 +101,7 @@ router.get("/song", async (req, res) => {
 
     return res.render("song", {
         "csrfToken": req.csrfToken(),
-        "user": req.session.username,
+        "username": req.session.username,
         "song": song
     });
 });

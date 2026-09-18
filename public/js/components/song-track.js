@@ -1,4 +1,11 @@
-import { loadAudioBlob, uploadAudioToS3, deleteAudioFromS3, makeWaveSurfer, makeWaveRecorder } from "../utils.js";
+import {
+    loadAudioBlob,
+    uploadAudioToS3,
+    deleteAudioFromS3,
+    makeWaveSurfer,
+    makeWaveRecorder,
+    clipTrack
+} from "../utils.js";
 
 
 class SongTrack extends HTMLElement {
@@ -25,12 +32,20 @@ class SongTrack extends HTMLElement {
         const filename = this.getAttribute("filename");
         const description = this.getAttribute("description");
         const createdBy = this.getAttribute("created-by");
+        // get the username of the logged in user (certain features only if track owned by that user)
+        const userName = document.querySelector('meta[name="username"]').content;
+        const isOwner = userName === createdBy;
 
         this.innerHTML = `
             <div class="track-div" data-track-id="${trackId}">
                 <div class="waveform-wrapper">
                     <div class="waveform-track" data-filename="${filename}"></div>
                     <div class="waveform-range-select hidden-div"></div>
+                </div>
+                <div class="track-edit-div hidden-div">
+                    <button class="swm-button clear-button">Clear</button>
+                    <button class="swm-button fade-in-button">Fade In</button>
+                    <button class="swm-button fade-out-button">Fade Out</button>
                 </div>
                 <div class="track-detail">
                     <div class="track-detail-head-div">
@@ -46,7 +61,7 @@ class SongTrack extends HTMLElement {
                         </div>
                     </div>
                     <div class="track-buttons-div">
-                        <button class="swm-button delete-track-button">Delete</button>
+                        <button class="swm-button delete-track-button ${!isOwner ? 'invisible-button' : ''}">Delete</button>
                         <button class="swm-button confirm-delete-track-button hidden-button">Confirm</div>
                         <div>
                             <button class="swm-button play-track-button" type="button">Play</button>
@@ -88,6 +103,14 @@ class SongTrack extends HTMLElement {
     setDuration(duration) {
         this.duration = duration;
         this.querySelector(".waveform-track").style.width = (40 * duration) + "px";
+    }
+
+    toggleEditDiv(mode) {
+        if (mode === "show") {
+            this.querySelector(".track-edit-div").classList.remove("hidden-div");
+        } else if (mode === "hide") {
+            this.querySelector(".track-edit-div").classList.add("hidden-div");
+        }
     }
 
     playTrack(volume) {
@@ -185,6 +208,8 @@ class SongTrack extends HTMLElement {
                     this.selectStartPct = selectLeft / waveformTrackRect.width;
                     this.selectEndPct = selectRight / waveformTrackRect.width;
                     console.log(this.selectStartPct * this.duration, this.selectEndPct * this.duration);
+                    // show edit div:
+                    this.toggleEditDiv("show");
                 } else {
                     // treat as a click: clear selection if any
                     e.preventDefault();
@@ -195,18 +220,25 @@ class SongTrack extends HTMLElement {
                     this.selectEndPct = null;
                     rangeSelectDiv.style.left = 0;
                     rangeSelectDiv.style.width = 0;
+                    // hide edit div:
+                    this.toggleEditDiv("hide");
+
+                    // just for testing purposes: will go in editing button listeners
+                    clipTrack(this, 0, 0);
                 }
             }
         });
         this.addEventListener("pointermove", (e) => {
             if (selecting) {
                 e.preventDefault();
-                moved = true;
                 const waveformTrackRect = waveformTrack.getBoundingClientRect();
-                selectRight = Math.min(parseFloat(waveformTrack.style.width), e.clientX - waveformTrackRect.left);
-                rangeSelectDiv.classList.remove("hidden-div");
-                rangeSelectDiv.style.left = selectLeft + "px";
-                rangeSelectDiv.style.width = (selectRight - selectLeft) + "px";
+                if (e.clientX > selectLeft + waveformTrackRect.left) {
+                    moved = true;
+                    selectRight = Math.min(parseFloat(waveformTrack.style.width), e.clientX - waveformTrackRect.left);
+                    rangeSelectDiv.classList.remove("hidden-div");
+                    rangeSelectDiv.style.left = selectLeft + "px";
+                    rangeSelectDiv.style.width = (selectRight - selectLeft) + "px";
+                }
             } else if (e.target.closest(".track-detail")) {
                 if (!dragging) return;
                 let x = Math.max(0, e.clientX - offsetX);
