@@ -175,7 +175,16 @@ export const loadAudioBlob = async (fileName) => {
 };
 
 
-export const clipTrack = async (songTrack, start, end) => {
+function clearSection(channelData, startSection, endSection, numChannels) {
+    for (let ii = startSection; ii <= endSection; ii++) {
+        for (let jj = 0; jj < numChannels ; jj++) {
+            channelData[jj][ii] = 0;
+        }
+    }
+}
+
+
+export const editTrack = async (songTrack, start, end, operation) => {
 
     const audioBuffer = songTrack.wavesurfer.getDecodedData();
 
@@ -183,6 +192,22 @@ export const clipTrack = async (songTrack, start, end) => {
         (_, i) => audioBuffer.getChannelData(i));
 
     console.log(channelData);
+
+    const startClip = Math.floor(start * channelData[0].length);
+    const endClip = Math.floor(end * channelData[0].length);
+    if (operation === "clear") {
+        clearSection(channelData, startClip, endClip, audioBuffer.numberOfChannels);
+    }
+
+    const bytes = await encode.webm(channelData, {
+        sampleRate: audioBuffer.sampleRate
+    });
+
+    const blob = new Blob([bytes], { type: "audio/webm" });
+    const url = URL.createObjectURL(blob);
+
+    songTrack.wavesurfer.load(url);
+
     // TODO: do this sort of thing:
     //
     // import encode from 'https://esm.sh/@audio/encode'

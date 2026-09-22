@@ -4,7 +4,7 @@ import {
     deleteAudioFromS3,
     makeWaveSurfer,
     makeWaveRecorder,
-    clipTrack
+    editTrack
 } from "../utils.js";
 
 
@@ -43,6 +43,9 @@ class SongTrack extends HTMLElement {
                     <div class="waveform-range-select hidden-div"></div>
                 </div>
                 <div class="track-edit-div hidden-div">
+                    <div>
+                        <span class="select-time-range"></span>
+                    </div>
                     <button class="swm-button clear-button">Clear</button>
                     <button class="swm-button fade-in-button">Fade In</button>
                     <button class="swm-button fade-out-button">Fade Out</button>
@@ -172,6 +175,10 @@ class SongTrack extends HTMLElement {
                 }
                 // remove the track from the Song
                 this.remove();
+            } else if (e.target.closest(".clear-button")) {
+                e.preventDefault();
+                // just for testing purposes: will go in editing button listeners
+                editTrack(this, this.selectStartPct, this.selectEndPct, "clear");
             }
         });
         this.addEventListener("pointerdown", (e) => {
@@ -202,11 +209,6 @@ class SongTrack extends HTMLElement {
                 selecting = false;
                 if (moved) {
                     // fix the selection
-                    // calculate start/end times
-                    // enable editing buttons (clip, crop)
-                    const waveformTrackRect = waveformTrack.getBoundingClientRect();
-                    this.selectStartPct = selectLeft / waveformTrackRect.width;
-                    this.selectEndPct = selectRight / waveformTrackRect.width;
                     console.log(this.selectStartPct * this.duration, this.selectEndPct * this.duration);
                     // show edit div:
                     this.toggleEditDiv("show");
@@ -224,7 +226,7 @@ class SongTrack extends HTMLElement {
                     this.toggleEditDiv("hide");
 
                     // just for testing purposes: will go in editing button listeners
-                    clipTrack(this, 0, 0);
+                    //clipTrack(this, 0, 0);
                 }
             }
         });
@@ -238,6 +240,25 @@ class SongTrack extends HTMLElement {
                     rangeSelectDiv.classList.remove("hidden-div");
                     rangeSelectDiv.style.left = selectLeft + "px";
                     rangeSelectDiv.style.width = (selectRight - selectLeft) + "px";
+                    // enable editing buttons (clip, crop)
+                    this.selectStartPct = selectLeft / waveformTrackRect.width;
+                    this.selectEndPct = selectRight / waveformTrackRect.width;
+                    // calculate start/end times
+                    const startTime = this.selectStartPct * this.duration;
+                    const endTime = this.selectEndPct * this.duration;
+                    this.querySelector(".select-time-range").innerHTML = `${startTime.toFixed(1)} s&ensp;-&ensp;${endTime.toFixed(1)} s`;
+                    this.toggleEditDiv("show");
+                } else {
+                    // cancel region
+                    moved = false;
+                    rangeSelectDiv.classList.add("hidden-div");
+                    selectRight = null;
+                    this.selectStartPct = null;
+                    this.selectEndPct = null;
+                    rangeSelectDiv.style.left = 0;
+                    rangeSelectDiv.style.width = 0;
+                    // hide edit div:
+                    this.toggleEditDiv("hide");
                 }
             } else if (e.target.closest(".track-detail")) {
                 if (!dragging) return;
