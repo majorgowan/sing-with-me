@@ -184,19 +184,59 @@ function clearSection(channelData, startSection, endSection, numChannels) {
 }
 
 
+function loopSection(channelData, startSection, endSection, numChannels) {
+    // extend if loop extends out of length of array
+    if (2 * endSection - startSection > channelData[0].length) {
+        const newLength = 2 * endSection - startSection;
+        const newChannelData = channelData.map(channel => {
+            const newChannel = new Float32Array(newLength);
+            // copy old channel
+            newChannel.set(channel);
+            // apply loop
+            for (let ii = 0; ii <= endSection - startSection; ii++) {
+                newChannel[endSection + ii] = newChannel[startSection + ii];
+            }
+            return newChannel;
+        });
+
+        return newChannelData;
+    }
+
+    for (let ii = 0; ii <= endSection - startSection; ii++) {
+        for (let jj = 0; jj < numChannels ; jj++) {
+            channelData[jj][endSection + ii] = channelData[jj][startSection + ii];
+        }
+    }
+    return channelData;
+}
+
+
 export const editTrack = async (songTrack, start, end, operation) => {
 
     const audioBuffer = songTrack.wavesurfer.getDecodedData();
 
-    const channelData = Array.from({ length: audioBuffer.numberOfChannels },
+    let channelData = Array.from({ length: audioBuffer.numberOfChannels },
         (_, i) => audioBuffer.getChannelData(i));
 
     console.log(channelData);
 
-    const startClip = Math.floor(start * channelData[0].length);
-    const endClip = Math.floor(end * channelData[0].length);
+    let startClip = Math.floor(start * channelData[0].length);
+    let endClip = Math.floor(end * channelData[0].length);
     if (operation === "clear") {
         clearSection(channelData, startClip, endClip, audioBuffer.numberOfChannels);
+        songTrack.setModified();
+    } else if (operation === "loop") {
+        channelData = loopSection(channelData, startClip, endClip, audioBuffer.numberOfChannels);
+        // shift the selection and correct percentages
+        const tempStartClip = startClip;
+        startClip = endClip;
+        endClip = 2 * endClip - tempStartClip;
+        console.log("length length length", channelData[0].length);
+        songTrack.selectStartPct = startClip / channelData[0].length;
+        songTrack.selectEndPct = endClip / channelData[0].length;
+        console.log(songTrack.selectStartPct, songTrack.selectEndPct);
+        songTrack.setModified();
+        songTrack.setSelection();
     }
 
     const bytes = await encode.webm(channelData, {

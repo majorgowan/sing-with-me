@@ -167,6 +167,13 @@ song-track, new-track {
     font-weight: bold;
     color: darkgreen;
 }
+.modified-div {
+    top: 20px;
+    right: 20px;
+    position: absolute;
+    font-weight: bold;
+    color: darkred;
+}
 .delete-track-button {
     bottom: 20px;
     right: 20px;

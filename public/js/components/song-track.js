@@ -20,6 +20,7 @@ class SongTrack extends HTMLElement {
         this.attachListeners();
         this.selectStartPct = null;
         this.selectEndPct = null;
+        this.modified = false;
     }
 
     disconnectedCallback() {
@@ -47,8 +48,8 @@ class SongTrack extends HTMLElement {
                         <span class="select-time-range"></span>
                     </div>
                     <button class="swm-button clear-button">Clear</button>
-                    <button class="swm-button fade-in-button">Fade In</button>
-                    <button class="swm-button fade-out-button">Fade Out</button>
+                    <button class="swm-button copy-button">Copy</button>
+                    <button class="swm-button loop-button">Loop</button>
                 </div>
                 <div class="track-detail">
                     <div class="track-detail-head-div">
@@ -61,6 +62,9 @@ class SongTrack extends HTMLElement {
                             </div>
                         </div>
                         <div class="count-down-div hidden-div">
+                        </div>
+                        <div class="modified-div hidden-div">
+                        MODIFIED
                         </div>
                     </div>
                     <div class="track-buttons-div">
@@ -108,6 +112,30 @@ class SongTrack extends HTMLElement {
         this.querySelector(".waveform-track").style.width = (40 * duration) + "px";
     }
 
+    setModified(unset) {
+        if (unset) {
+            this.modified = false;
+        } else {
+            this.modified = true;
+            this.querySelector(".modified-div").classList.remove("hidden-div");
+        }
+    }
+
+    setSelection(clear) {
+        const rangeSelectDiv = this.querySelector(".waveform-range-select");
+        const waveformTrack = this.querySelector(".waveform-track");
+
+        if (clear) {
+            rangeSelectDiv.classList.add("hidden-div");
+            rangeSelectDiv.style.left = 0;
+            rangeSelectDiv.style.width = 0;
+        } else {
+            rangeSelectDiv.classList.remove("hidden-div");
+            rangeSelectDiv.style.left = this.selectStartPct * parseFloat(waveformTrack.style.width) + "px";
+            rangeSelectDiv.style.width = (this.selectEndPct - this.selectStartPct) * parseFloat(waveformTrack.style.width) + "px";
+        }
+    }
+
     toggleEditDiv(mode) {
         if (mode === "show") {
             this.querySelector(".track-edit-div").classList.remove("hidden-div");
@@ -144,7 +172,6 @@ class SongTrack extends HTMLElement {
         let moved = false;
 
         let selectLeft, selectRight;
-        const rangeSelectDiv = this.querySelector(".waveform-range-select");
         const waveformTrack = this.querySelector(".waveform-track");
 
         this.addEventListener("click", async (e) => {
@@ -175,9 +202,11 @@ class SongTrack extends HTMLElement {
                 }
                 // remove the track from the Song
                 this.remove();
+            } else if (e.target.closest(".loop-button")) {
+                e.preventDefault();
+                editTrack(this, this.selectStartPct, this.selectEndPct, "loop");
             } else if (e.target.closest(".clear-button")) {
                 e.preventDefault();
-                // just for testing purposes: will go in editing button listeners
                 editTrack(this, this.selectStartPct, this.selectEndPct, "clear");
             }
         });
@@ -215,18 +244,13 @@ class SongTrack extends HTMLElement {
                 } else {
                     // treat as a click: clear selection if any
                     e.preventDefault();
-                    rangeSelectDiv.classList.add("hidden-div");
+                    this.setSelection(true);
                     selectLeft = null;
                     selectRight = null;
                     this.selectStartPct = null;
                     this.selectEndPct = null;
-                    rangeSelectDiv.style.left = 0;
-                    rangeSelectDiv.style.width = 0;
                     // hide edit div:
                     this.toggleEditDiv("hide");
-
-                    // just for testing purposes: will go in editing button listeners
-                    //clipTrack(this, 0, 0);
                 }
             }
         });
@@ -237,12 +261,10 @@ class SongTrack extends HTMLElement {
                 if (e.clientX > selectLeft + waveformTrackRect.left) {
                     moved = true;
                     selectRight = Math.min(parseFloat(waveformTrack.style.width), e.clientX - waveformTrackRect.left);
-                    rangeSelectDiv.classList.remove("hidden-div");
-                    rangeSelectDiv.style.left = selectLeft + "px";
-                    rangeSelectDiv.style.width = (selectRight - selectLeft) + "px";
                     // enable editing buttons (clip, crop)
                     this.selectStartPct = selectLeft / waveformTrackRect.width;
                     this.selectEndPct = selectRight / waveformTrackRect.width;
+                    this.setSelection();
                     // calculate start/end times
                     const startTime = this.selectStartPct * this.duration;
                     const endTime = this.selectEndPct * this.duration;
@@ -251,12 +273,10 @@ class SongTrack extends HTMLElement {
                 } else {
                     // cancel region
                     moved = false;
-                    rangeSelectDiv.classList.add("hidden-div");
+                    this.setSelection(true);
                     selectRight = null;
                     this.selectStartPct = null;
                     this.selectEndPct = null;
-                    rangeSelectDiv.style.left = 0;
-                    rangeSelectDiv.style.width = 0;
                     // hide edit div:
                     this.toggleEditDiv("hide");
                 }
