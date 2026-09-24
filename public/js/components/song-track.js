@@ -26,6 +26,7 @@ class SongTrack extends HTMLElement {
     disconnectedCallback() {
         clearInterval(this._countDown);
         clearTimeout(this._confirmTimeout);
+        clearTimeout(this._delayTimeout);
     }
 
     render() {
@@ -144,7 +145,7 @@ class SongTrack extends HTMLElement {
         }
     }
 
-    playTrack(volume) {
+    playTrack(volume, withDelay) {
         if (this.hasAudio()) {
             if (volume) {
                 this.wavesurfer.setVolume(volume);
@@ -152,7 +153,18 @@ class SongTrack extends HTMLElement {
             if (this.selectStartPct && this.selectEndPct) {
                 this.wavesurfer.play(this.selectStartPct * this.duration, this.selectEndPct * this.duration);
             }
-            this.wavesurfer.play();
+            if (withDelay) {
+                // determine the delay based on position of the track
+                const waveformTrack = this.querySelector(".waveform-track");
+                const left = this.style.left ? parseFloat(this.style.left) : 0;
+                const delay = left / parseFloat(waveformTrack.style.width) * this.duration;
+                console.log(left, waveformTrack.style.width, this.duration, delay);
+                this._delayTimeout = setTimeout(() => {
+                    this.wavesurfer.play();
+                }, delay * 1000);
+            } else {
+                this.wavesurfer.play();
+            }
         }
     }
 

@@ -26,7 +26,7 @@ class Song extends HTMLElement {
             if (e.target.closest(".play-all-button")) {
                 e.preventDefault();
                 this.tracks.forEach(songTrack => {
-                    songTrack.playTrack();
+                    songTrack.playTrack(null, true);
                 });
             } else if (e.target.closest(".add-new-track-button")) {
                 e.preventDefault();
