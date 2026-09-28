@@ -5,8 +5,11 @@ class Song extends HTMLElement {
     connectedCallback() {
         this.render();
         // TODO: discover child song-tracks
-        this.tracks = [...this.querySelectorAll("song-track")];
         this.attachListeners();
+    }
+
+    get tracks() {
+        return this.querySelectorAll("song-track");
     }
 
     render() {
@@ -49,6 +52,7 @@ class Song extends HTMLElement {
                 e.preventDefault();
                 const songInfo = this.getSongData(true);
                 console.log(songInfo);
+                // TODO: SAVE ALL NEW BZW. MODIFIED TRACKS
 
                 const requestBody = {"songInfo": songInfo};
 
@@ -87,6 +91,8 @@ class Song extends HTMLElement {
             "bpm": this.querySelector(".bpm-input").value,
             "timeSignature": this.querySelector(".time-signature-select").value,
             "createdBy": this.getAttribute("created-by"),
+            "forkedFrom": "",
+            "impressions": 0,
             "tracks": songTrackInfo
         };
     }

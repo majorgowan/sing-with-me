@@ -20,6 +20,7 @@ class SongTrack extends HTMLElement {
         this.attachListeners();
         this.selectStartPct = null;
         this.selectEndPct = null;
+        this.delay = this.getAttribute("delay");
         this.modified = false;
     }
 
@@ -69,8 +70,14 @@ class SongTrack extends HTMLElement {
                         </div>
                     </div>
                     <div class="track-buttons-div">
-                        <button class="swm-button delete-track-button ${!isOwner ? 'invisible-button' : ''}">Delete</button>
-                        <button class="swm-button confirm-delete-track-button hidden-button">Confirm</div>
+                        <div class="dots-menu-wrap">
+                            <button class="swm-button dots-button">&#x22EE;</button>
+                            <div class="dots-menu">
+                                <button class="duplicate-button">Duplicate</button>
+                                <button class="delete-track-button ${!isOwner ? 'hidden-menu-button' : ''}">Delete</button>
+                                <button class="confirm-delete-track-button hidden-menu-button">Confirm</button>
+                            </div> 
+                        </div>
                         <div>
                             <button class="swm-button play-track-button" type="button">Play</button>
                             <button class="swm-button stop-track-button" type="button">Stop</button>
@@ -95,6 +102,8 @@ class SongTrack extends HTMLElement {
             "filename": this.getAttribute("filename"),
             "description": this.getAttribute("description"),
             "saved": this.getAttribute("saved"),
+            "duration": this.duration,
+            "delay": this.delay,
             "createdBy": this.getAttribute("created-by")
         };
     }
@@ -111,6 +120,11 @@ class SongTrack extends HTMLElement {
     setDuration(duration) {
         this.duration = duration;
         this.querySelector(".waveform-track").style.width = (40 * duration) + "px";
+        // set left position if there is a delay
+        if (this.delay) {
+            const waveformTrack = this.querySelector('.waveform-track');
+            this.style.left = this.delay / this.duration * parseFloat(waveformTrack.style.width) + "px";
+        }
     }
 
     setModified(unset) {
@@ -153,15 +167,11 @@ class SongTrack extends HTMLElement {
             if (this.selectStartPct && this.selectEndPct) {
                 this.wavesurfer.play(this.selectStartPct * this.duration, this.selectEndPct * this.duration);
             }
-            if (withDelay) {
-                // determine the delay based on position of the track
-                const waveformTrack = this.querySelector(".waveform-track");
-                const left = this.style.left ? parseFloat(this.style.left) : 0;
-                const delay = left / parseFloat(waveformTrack.style.width) * this.duration;
-                console.log(left, waveformTrack.style.width, this.duration, delay);
+            if (withDelay && this.delay) {
+                console.log(this.delay);
                 this._delayTimeout = setTimeout(() => {
                     this.wavesurfer.play();
-                }, delay * 1000);
+                }, this.delay * 1000);
             } else {
                 this.wavesurfer.play();
             }
@@ -186,6 +196,9 @@ class SongTrack extends HTMLElement {
         let selectLeft, selectRight;
         const waveformTrack = this.querySelector(".waveform-track");
 
+        // dots menu
+        const dotsMenuWrap = this.querySelector(".dots-menu-wrap");
+
         this.addEventListener("click", async (e) => {
             if (e.target.closest(".play-track-button")) {
                 e.preventDefault();
@@ -195,17 +208,41 @@ class SongTrack extends HTMLElement {
             } else if (e.target.closest(".stop-track-button")) {
                 e.preventDefault();
                 this.stopTrack();
+            } else if (e.target.closest(".dots-button")) {
+                e.preventDefault();
+                dotsMenuWrap.classList.toggle("open-menu");
+            } else if (e.target.closest(".duplicate-button")) {
+                e.preventDefault();
+                // TODO: IMPLEMENT THIS
+                console.log("duplicate the whole track please");
+                const dupTrack = document.createElement("song-track");
+                const timeStamp = `${Date.now()}`;
+                const createdBy = this.getAttribute("created-by");
+                dupTrack.setAttribute("trackId", timeStamp);
+                // TODO: this only works if it's a saved track
+                //       what we really want is to clone the wavesurfer object
+                //       and create a new filename
+                dupTrack.setAttribute("filename", this.getAttribute("filename"));
+                dupTrack.setAttribute("description", this.getAttribute("description") + " (copy)");
+                dupTrack.setAttribute("created-by", createdBy);
+                dupTrack.setAttribute("delay", this.getAttribute("delay"));
+                dupTrack.setAttribute("saved", "false");
+                // add the dupTrack below this track
+                console.log(dupTrack);
+                this.after(dupTrack);
+                // close the dots menu
+                dotsMenuWrap.classList.remove("open-menu");
             } else if (e.target.closest(".delete-track-button")) {
                 e.preventDefault();
                 const deleteTrackButton = this.querySelector(".delete-track-button");
                 const confirmDeleteTrackButton = this.querySelector(".confirm-delete-track-button");
-                deleteTrackButton.classList.add("hidden-button");
-                confirmDeleteTrackButton.classList.remove("hidden-button");
+                deleteTrackButton.classList.add("hidden-menu-button");
+                confirmDeleteTrackButton.classList.remove("hidden-menu-button");
                 // clear any pending Timeouts (shouldn't happen)
                 if (this._confirmTimeout) clearTimeout(this._confirmTimeout);
                 this._confirmTimeout = setTimeout(() => {
-                    deleteTrackButton.classList.remove("hidden-button");
-                    confirmDeleteTrackButton.classList.add("hidden-button");
+                    deleteTrackButton.classList.remove("hidden-menu-button");
+                    confirmDeleteTrackButton.classList.add("hidden-menu-button");
                 }, 2000);
             } else if (e.target.closest(".confirm-delete-track-button")) {
                 e.preventDefault();
@@ -224,7 +261,7 @@ class SongTrack extends HTMLElement {
         });
         this.addEventListener("pointerdown", (e) => {
             if (e.target.closest(".track-detail")) {
-                e.preventDefault();
+                // e.preventDefault();
                 dragging = true;
                 this.style.cursor = "grabbing";
                 console.log("I've been grabbed yo!!!!!");
@@ -244,6 +281,7 @@ class SongTrack extends HTMLElement {
             if (e.target.closest(".track-detail")) {
                 dragging = false;
                 this.style.cursor = null;
+                this.delay = parseFloat(this.style.left) / parseFloat(waveformTrack.style.width) * this.duration;
                 console.log("It's okay she let go!!!!!", e.clientX - offsetX);
             } else if (e.target.closest(".waveform-track") || e.target.closest(".waveform-range-select")) {
                 e.preventDefault();
@@ -311,6 +349,11 @@ customElements.define("song-track", SongTrack);
 
 
 class NewTrack extends SongTrack {
+
+    connectedCallback() {
+        super.connectedCallback();
+        this.delay = 0;
+    }
 
     render() {
         super.render();
@@ -389,6 +432,7 @@ class NewTrack extends SongTrack {
                         }
                         clearInterval(this._countDown);
                         countDownDiv.classList.add("hidden-div");
+                        this.setModified();
                     }
                 }, tempo);
             } else if (e.target.closest(".stop-track-button")) {

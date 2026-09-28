@@ -1,6 +1,7 @@
 body {
     background-color: #7191df;
     color: #101020;
+    overflow-x: auto;
 }
 
 .login-form {
@@ -93,7 +94,6 @@ body {
     flex-direction: column;
 }
 .track-div {
-    width: 90%;
     display: flex;
     flex-direction: row;
     margin: 10px 0;
@@ -102,6 +102,9 @@ body {
     background-color: aliceblue;
     border: none;
     font-size: large;
+}
+.description-input:focus {
+    outline: none;
 }
 .track-detail {
     /* width: auto; */
@@ -169,22 +172,15 @@ song-track, new-track {
     color: darkgreen;
 }
 .modified-div {
-    top: 20px;
+    top: 40px;
     right: 20px;
     position: absolute;
     font-weight: bold;
     color: darkred;
 }
-.delete-track-button {
-    bottom: 20px;
-    right: 20px;
-    position: absolute;
-}
 .confirm-delete-track-button {
-    bottom: 20px;
-    right: 20px;
-    position: absolute;
-    background-color: tomato;
+    display: none;
+    background-color: orange !important;
 }
 
 .hidden-div {
@@ -195,4 +191,49 @@ song-track, new-track {
 }
 .invisible-button {
     visibility: hidden;
+}
+
+/* implement three-dots menu in each track-detail */
+.dots-menu-wrap {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    display: inline-block;
+}
+
+.dots-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    min-width: 160px;
+    background-color: palegoldenrod;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    border-radius: 4px;
+    z-index: 10;
+}
+
+.dots-menu button {
+    display: block;
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    text-align: left;
+    background-color: palegoldenrod;
+    border: none;
+    cursor: pointer;
+}
+.invisible-menu-button {
+    visibility: hidden !important;
+}
+.hidden-menu-button {
+    display: none !important;
+}
+.dots-menu button:hover {
+    filter: brightness(1.1); /* < 1 = darker, > 1 = lighter */
+}
+
+.dots-menu-wrap.open-menu .dots-menu {
+    display: block;
 }
