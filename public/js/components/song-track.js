@@ -16,7 +16,8 @@ class SongTrack extends HTMLElement {
 
     connectedCallback() {
         this.render();
-        this.initWaveform();
+        const blobUrl = this.getAttribute("blobUrl");
+        this.initWaveform(blobUrl);
         this.attachListeners();
         this.selectStartPct = null;
         this.selectEndPct = null;
@@ -88,12 +89,18 @@ class SongTrack extends HTMLElement {
         `
     }
 
-    async initWaveform() {
-        const filename = this.getAttribute("filename");
-        if (!filename) return;
-        const blob = await loadAudioBlob(filename);
-        const blobUrl = URL.createObjectURL(blob);
-        this.wavesurfer = makeWaveSurfer(this, blobUrl);
+    async initWaveform(url) {
+        if (url) {
+            // e.g. if copied from another track
+            this.blobUrl = url;
+            this.recordedBlob = await fetch(url).then(r => r.blob());
+        } else {
+            const filename = this.getAttribute("filename");
+            if (!filename) return;
+            this.recordedBlob = await loadAudioBlob(filename);
+            this.blobUrl = URL.createObjectURL(this.recordedBlob);
+        }
+        this.wavesurfer = makeWaveSurfer(this, this.blobUrl);
     }
 
     getTrackData() {
@@ -219,13 +226,12 @@ class SongTrack extends HTMLElement {
                 const timeStamp = `${Date.now()}`;
                 const createdBy = this.getAttribute("created-by");
                 dupTrack.setAttribute("trackId", timeStamp);
-                // TODO: this only works if it's a saved track
-                //       what we really want is to clone the wavesurfer object
-                //       and create a new filename
-                dupTrack.setAttribute("filename", this.getAttribute("filename"));
+                dupTrack.setAttribute("filename", this.getAttribute("filename") + `-copy-${timeStamp}`);
+                // create a url for the audio blob
+                dupTrack.setAttribute("blobUrl", URL.createObjectURL(this.recordedBlob));
                 dupTrack.setAttribute("description", this.getAttribute("description") + " (copy)");
                 dupTrack.setAttribute("created-by", createdBy);
-                dupTrack.setAttribute("delay", this.getAttribute("delay"));
+                dupTrack.setAttribute("delay", this.delay);
                 dupTrack.setAttribute("saved", "false");
                 // add the dupTrack below this track
                 console.log(dupTrack);
