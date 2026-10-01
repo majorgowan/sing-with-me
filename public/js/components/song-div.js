@@ -2,10 +2,17 @@
 
 class Song extends HTMLElement {
 
+    #observer = null;
+
     connectedCallback() {
         this.render();
-        // TODO: discover child song-tracks
         this.attachListeners();
+        this.globalTime = 0;
+        this.leftTimelineMargin = 0;
+    }
+
+    disconnectedCallback() {
+        this.#observer.disconnect();
     }
 
     get tracks() {
@@ -44,10 +51,8 @@ class Song extends HTMLElement {
                 el.setAttribute("description", "New track");
                 el.setAttribute("created-by", userName);
                 el.setAttribute("saved", "false");
+                // add this track to the DOM
                 addNewTrackDiv.prepend(el); // your track container
-                // add this track to the object's list of tracks
-                this.tracks.push(el);
-                console.log(this.tracks);
             } else if (e.target.closest(".save-song-button")) {
                 e.preventDefault();
                 const songInfo = this.getSongData(true);
@@ -95,6 +100,30 @@ class Song extends HTMLElement {
             "impressions": 0,
             "tracks": songTrackInfo
         };
+    }
+
+    updateTimeline() {
+        const tracks = this.tracks;
+        const timeLine = this.querySelector(".timeline");
+        if (tracks.length < 1) {
+            timeLine.classList.add("hidden-div");
+            return;
+        }
+
+        timeLine.classList.remove("hidden-div");
+        this.timeFactor = tracks[0].getTimeFactor();
+        this.leftTimelineMargin = parseFloat(getComputedStyle(tracks[0]).marginLeft);
+        console.log(`time factor: ${this.timeFactor} pixels per second`);
+    }
+
+    syncTimeline(t) {
+        // update the timeline
+        if (this.timeFactor && (t === 0 || t > this.globalTime)) {
+            // console.log(t);
+            const timelineTimer = this.querySelector(".timeline-timer");
+            timelineTimer.style.width = (this.leftTimelineMargin + this.timeFactor * t) + "px";
+            this.globalTime = t;
+        }
     }
 
 }

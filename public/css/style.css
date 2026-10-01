@@ -1,7 +1,14 @@
 body {
-    background-color: #7191df;
-    color: #101020;
+    background-color: #a1b1ff;
+    color: #222271;
     overflow-x: auto;
+    margin-bottom: 0;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+header {
+    margin: 10px;
 }
 
 .login-form {
@@ -34,12 +41,15 @@ body {
 }
 
 .song-head {
-    width: 70%;
+    max-width: 70%;
+    width: 600px;
     background-color: aliceblue;
     padding: 15px;
     border-radius: 15px;
     display: flex;
     flex-direction: column;
+    margin-left: 10px;
+    margin-bottom: 10px;
 }
 .song-head-row {
     display: flex;
@@ -135,7 +145,7 @@ body {
 .waveform-track {
     /* flex: 0 0 60%;  /* don't grow, don't shrink, basis = 60% */
     border: 1.5px solid saddlebrown;
-    background: peachpuff;
+    background-color: blanchedalmond;
     border-radius: 20px;
 }
 .waveform-wrapper {
@@ -161,6 +171,7 @@ song-track, new-track {
     left: auto;
     overflow: clip;
     cursor: grab;
+    margin-left: 10px;
 }
 
 .count-down-div {
@@ -200,7 +211,6 @@ song-track, new-track {
     right: 5px;
     display: inline-block;
 }
-
 .dots-menu {
     display: none;
     position: absolute;
@@ -212,7 +222,6 @@ song-track, new-track {
     border-radius: 4px;
     z-index: 10;
 }
-
 .dots-menu button {
     display: block;
     width: 100%;
@@ -233,7 +242,40 @@ song-track, new-track {
 .dots-menu button:hover {
     filter: brightness(1.1); /* < 1 = darker, > 1 = lighter */
 }
-
 .dots-menu-wrap.open-menu .dots-menu {
     display: block;
+}
+
+/* timeline */
+.timeline {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    border-top: 0.5px solid saddlebrown;
+    background-color: rgba(250, 150, 150, 0.2);
+    height: 60px;
+    width: 100%;
+}
+.timeline-item {
+    position: relative;
+    margin-bottom: 10px;
+}
+.timeline-dot {
+    position: absolute;
+    left: 100px;
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background-color: rgba(250, 0, 0, 0.3);
+}
+.timeline-content {
+}
+.timeline-timer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    background-color: rgba(250, 150, 150, 0.6);
+    border-right: solid 1px saddlebrown;
 }

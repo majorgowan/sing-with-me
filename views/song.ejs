@@ -3,8 +3,8 @@
 
 <head>
     <%- include("partials/head.ejs") %>
-    <script type="module" src="/js/components/song-track.js"></script>
     <script type="module" src="/js/components/song-div.js"></script>
+    <script type="module" src="/js/components/song-track.js"></script>
 </head>
 
 <body>
@@ -95,6 +95,14 @@
                         saved="true">
             </song-track>
         <% } %>
+    </div>
+
+    <div class="timeline hidden-div">
+        <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">30s</div>
+        </div>
+        <div class="timeline-timer"></div>
     </div>
 
 </song-div>

@@ -22,7 +22,6 @@ class SongTrack extends HTMLElement {
         this.selectStartPct = null;
         this.selectEndPct = null;
         this.delay = this.getAttribute("delay");
-        this.modified = false;
     }
 
     disconnectedCallback() {
@@ -75,6 +74,7 @@ class SongTrack extends HTMLElement {
                             <button class="swm-button dots-button">&#x22EE;</button>
                             <div class="dots-menu">
                                 <button class="duplicate-button">Duplicate</button>
+                                <button class="rename-track-button ${!isOwner ? 'hidden-menu-button' : ''}">Rename</button>
                                 <button class="delete-track-button ${!isOwner ? 'hidden-menu-button' : ''}">Delete</button>
                                 <button class="confirm-delete-track-button hidden-menu-button">Confirm</button>
                             </div> 
@@ -94,11 +94,15 @@ class SongTrack extends HTMLElement {
             // e.g. if copied from another track
             this.blobUrl = url;
             this.recordedBlob = await fetch(url).then(r => r.blob());
+            // the copy is by-definition modified
+            this.setModified();
         } else {
             const filename = this.getAttribute("filename");
             if (!filename) return;
             this.recordedBlob = await loadAudioBlob(filename);
             this.blobUrl = URL.createObjectURL(this.recordedBlob);
+            // loaded from disk, so initially not modified
+            this.setModified(true);
         }
         this.wavesurfer = makeWaveSurfer(this, this.blobUrl);
     }
@@ -121,7 +125,10 @@ class SongTrack extends HTMLElement {
     }
 
     hasAudio() {
-        return this.wavesurfer.getSrc().startsWith("blob:");
+        if (this.wavesurfer) {
+            return this.wavesurfer.getSrc().startsWith("blob:");
+        }
+        return false;
     }
 
     setDuration(duration) {
@@ -132,6 +139,12 @@ class SongTrack extends HTMLElement {
             const waveformTrack = this.querySelector('.waveform-track');
             this.style.left = this.delay / this.duration * parseFloat(waveformTrack.style.width) + "px";
         }
+    }
+
+    getTimeFactor() {
+        if (!this.hasAudio()) return null;
+        // pixels per second
+        return parseFloat(this.querySelector(".waveform-track").style.width) / this.duration;
     }
 
     setModified(unset) {

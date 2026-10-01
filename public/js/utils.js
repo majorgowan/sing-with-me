@@ -29,7 +29,13 @@ export const makeWaveSurfer = (songTrack, blobUrl) => {
     wavesurfer.on("ready", () => {
         songTrack.setDuration(wavesurfer.getDuration());
         console.log(`Ready, duration: ${songTrack.duration}`);
-    })
+        songTrack.closest("song-div").updateTimeline();
+    });
+
+    wavesurfer.on("timeupdate", (t) => {
+        const delay = songTrack.delay ? songTrack.delay : 0.0;
+        songTrack.closest("song-div").syncTimeline(t + delay);
+    });
 
     return wavesurfer;
 };
