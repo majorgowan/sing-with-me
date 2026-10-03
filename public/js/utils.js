@@ -12,9 +12,9 @@ export const makeWaveSurfer = (songTrack, blobUrl) => {
         "progressColor": "olive",
         "interact": false,
         "normalize": true,
-        "plugins": [
-            TimelinePlugin.create()
-        ],
+        // "plugins": [
+        //     TimelinePlugin.create()
+        // ],
         "url": blobUrl
     });
 
@@ -60,7 +60,7 @@ export const makeWaveRecorder = async (newTrack, recorder) => {
                 scrollingWaveform: true, // Optional: scroll waveform while recording
                 renderRecordedAudio: true // Optional: render final audio after stop
             }),
-            TimelinePlugin.create()
+            // TimelinePlugin.create()
         ]
     });
 
@@ -73,6 +73,12 @@ export const makeWaveRecorder = async (newTrack, recorder) => {
 
     newRecorder.on("ready", () => {
         newTrack.setDuration(newRecorder.getDuration());
+        newTrack.closest("song-div").updateTimeline();
+    });
+
+    newRecorder.on("timeupdate", (t) => {
+        const delay = newTrack.delay ? newTrack.delay : 0.0;
+        songTrack.closest("song-div").syncTimeline(t + delay);
     });
 
     return newRecorder;

@@ -16,7 +16,15 @@ class Song extends HTMLElement {
     }
 
     get tracks() {
-        return this.querySelectorAll("song-track");
+        return this.querySelectorAll("song-track, new-track");
+    }
+
+    get widestTrackWidth() {
+        // get the full width of the widest track
+        return Array.from(this.tracks).reduce((maxWidth, track) => {
+            return Math.max(maxWidth,
+                parseFloat(track.style.left) + parseFloat(getComputedStyle(track).width));
+        }, 0);
     }
 
     render() {
@@ -85,7 +93,7 @@ class Song extends HTMLElement {
     }
 
     getSongData(onlySaved) {
-        const songTrackInfo = this.tracks
+        const songTrackInfo = Array.from(this.tracks)
             .map(track => track.getTrackData())
             .filter(trackData => {
                 return (!onlySaved || trackData.saved === "true")
@@ -114,11 +122,35 @@ class Song extends HTMLElement {
         this.timeFactor = tracks[0].getTimeFactor();
         this.leftTimelineMargin = parseFloat(getComputedStyle(tracks[0]).marginLeft);
         console.log(`time factor: ${this.timeFactor} pixels per second`);
+
+        const tickInterval = 10;
+        const timelineItems = this.querySelector(".timeline-items");
+        const totalDuration = Array.from(tracks).reduce((max, track0) => {
+            return Math.max(max, parseFloat(track0.delay) + parseFloat(track0.duration));
+        }, 0);
+        const nItems = Math.floor(totalDuration / tickInterval) + 1;
+        console.log("total duration: ", totalDuration, "nItems: ", nItems);
+        timelineItems.innerHTML = `
+            <div style="display: inline-block; width: 10px;">
+            </div>
+        `;
+        for (let item = 0; item < nItems; item++) {
+            const width = (item === nItems - 1) ? "60px" : `${tickInterval * this.timeFactor}px`;
+            const timeString = (item === 0) ? "0" : `${item * tickInterval} s`;
+            console.log(width);
+            timelineItems.innerHTML += `
+                <div class="timeline-item" style="width: ${width};">
+                    <span class="timeline-content">&nbsp;${timeString}</span>
+                </div>
+            `
+        }
+        console.log(timelineItems);
     }
 
     syncTimeline(t) {
         // update the timeline
-        if (this.timeFactor && (t === 0 || t > this.globalTime)) {
+        // TODO: this logic isn't robust if the "leading" track ends before the others, the timeline stops syncing
+        if (this.timeFactor && (t < 0.1 || t > this.globalTime)) {
             // console.log(t);
             const timelineTimer = this.querySelector(".timeline-timer");
             timelineTimer.style.width = (this.leftTimelineMargin + this.timeFactor * t) + "px";

@@ -99,12 +99,25 @@ header {
     filter: brightness(1.1); /* < 1 = darker, > 1 = lighter */
     cursor: pointer;
 }
+.mute-checkbox-label {
+    position: absolute;
+    bottom: 10px;
+    right: 5px;
+    display: inline-block;
+}
+.swm-checkbox {
+    padding: 7px;
+    border-radius: 15px;
+    background-color: palegoldenrod;
+}
 .track-column-div {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
 }
 .track-div {
     display: flex;
+    position: relative;
     flex-direction: row;
     margin: 10px 0;
 }
@@ -254,21 +267,15 @@ song-track, new-track {
     border-top: 0.5px solid saddlebrown;
     background-color: rgba(250, 150, 150, 0.2);
     height: 60px;
-    width: 100%;
+    min-width: 100%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
 }
 .timeline-item {
-    position: relative;
-    margin-bottom: 10px;
-}
-.timeline-dot {
-    position: absolute;
-    left: 100px;
-    top: 0;
-    width: 2px;
-    height: 100%;
-    background-color: rgba(250, 0, 0, 0.3);
-}
-.timeline-content {
+    display: inline-block;
+    border-left: 1px solid saddlebrown;
+    height: 70%;
 }
 .timeline-timer {
     position: absolute;

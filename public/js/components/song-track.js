@@ -79,6 +79,10 @@ class SongTrack extends HTMLElement {
                                 <button class="confirm-delete-track-button hidden-menu-button">Confirm</button>
                             </div> 
                         </div>
+                        <label class="swm-checkbox mute-checkbox-label">
+                            <input type="checkbox" class="mute-checkbox">
+                            Mute
+                        </label>
                         <div>
                             <button class="swm-button play-track-button" type="button">Play</button>
                             <button class="swm-button stop-track-button" type="button">Stop</button>
@@ -179,8 +183,13 @@ class SongTrack extends HTMLElement {
         }
     }
 
+    isMuted() {
+        console.log(this.getAttribute("description") + " muted?: " + this.querySelector(".mute-checkbox").checked);
+        return this.querySelector(".mute-checkbox").checked;
+    }
+
     playTrack(volume, withDelay) {
-        if (this.hasAudio()) {
+        if (this.hasAudio() && !this.isMuted()) {
             if (volume) {
                 this.wavesurfer.setVolume(volume);
             }
@@ -300,7 +309,6 @@ class SongTrack extends HTMLElement {
             if (e.target.closest(".track-detail")) {
                 dragging = false;
                 this.style.cursor = null;
-                this.delay = parseFloat(this.style.left) / parseFloat(waveformTrack.style.width) * this.duration;
                 console.log("It's okay she let go!!!!!", e.clientX - offsetX);
             } else if (e.target.closest(".waveform-track") || e.target.closest(".waveform-range-select")) {
                 e.preventDefault();
@@ -353,6 +361,14 @@ class SongTrack extends HTMLElement {
                 if (!dragging) return;
                 let x = Math.max(0, e.clientX - offsetX);
                 this.style.left = x + "px";
+                // TODO: compute and set width of container (<song-div> or maybe even <body>!!)
+                //       reset to default width if the widestWidth gets less
+                const widestWidth = this.closest("song-div").widestTrackWidth;
+                console.log(widestWidth);
+                const bodyWidth = parseFloat(getComputedStyle(this.closest("body")).width);
+                this.delay = parseFloat(this.style.left) / parseFloat(waveformTrack.style.width) * this.duration;
+                this.closest("body").style.width = widestWidth + 100 + "px";
+                this.closest("song-div").updateTimeline();
             }
         });
         this.addEventListener("change", (e) => {
