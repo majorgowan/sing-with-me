@@ -88,6 +88,14 @@ class Song extends HTMLElement {
                     this.setAttribute("song-id", data.songId);
                     console.log("updated song id", data.songId);
                 }
+            } else if (e.target.closest(".timeline")) {
+                e.preventDefault();
+                // cue all tracks to click position
+                const globalTime = (parseFloat(e.clientX) - parseFloat(this.leftTimelineMargin)) / this.timeFactor
+                console.log("global time: " + globalTime, "clientX: " + e.clientX + "px", "left margin: " + this.leftTimelineMargin + "px", this.timeFactor + "px / s");
+                for (const track of this.tracks) {
+                    track.seek(globalTime);
+                }
             }
         });
     }

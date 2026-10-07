@@ -141,6 +141,10 @@ class SongTrack extends HTMLElement {
         return parseFloat(volumeSlider.value);
     }
 
+    seek(time) {
+        this.wavesurfer.setTime(time - this.delay);
+    }
+
     setDuration(duration) {
         this.duration = duration;
         this.querySelector(".waveform-track").style.width = (40 * duration) + "px";
@@ -203,6 +207,10 @@ class SongTrack extends HTMLElement {
                 this.wavesurfer.play(this.selectStartPct * this.duration, this.selectEndPct * this.duration);
             }
             if (withDelay && this.delay) {
+                // TODO: this should only be used when playing from the beginning
+                //       if user has seeked to a spot the delay is already done
+                //       Maybe just check if globalTime is 0 before playing or have
+                //       a "isSeeked" flag.
                 console.log(this.delay);
                 this._delayTimeout = setTimeout(() => {
                     this.wavesurfer.play();
