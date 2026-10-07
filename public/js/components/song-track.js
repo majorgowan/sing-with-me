@@ -83,6 +83,7 @@ class SongTrack extends HTMLElement {
                             <input type="checkbox" class="mute-checkbox">
                             Mute
                         </label>
+                        <input type="range" min="0" max="1" step="0.1" value="1" class="volume-slider">
                         <div>
                             <button class="swm-button play-track-button" type="button">Play</button>
                             <button class="swm-button stop-track-button" type="button">Stop</button>
@@ -133,6 +134,11 @@ class SongTrack extends HTMLElement {
             return this.wavesurfer.getSrc().startsWith("blob:");
         }
         return false;
+    }
+
+    get volumeFactor() {
+        const volumeSlider = this.querySelector(".volume-slider");
+        return parseFloat(volumeSlider.value);
     }
 
     setDuration(duration) {
@@ -232,7 +238,7 @@ class SongTrack extends HTMLElement {
             if (e.target.closest(".play-track-button")) {
                 e.preventDefault();
                 if (this.wavesurfer) {
-                    this.playTrack();
+                    this.playTrack(this.volumeFactor);
                 }
             } else if (e.target.closest(".stop-track-button")) {
                 e.preventDefault();
@@ -364,8 +370,6 @@ class SongTrack extends HTMLElement {
                 // TODO: compute and set width of container (<song-div> or maybe even <body>!!)
                 //       reset to default width if the widestWidth gets less
                 const widestWidth = this.closest("song-div").widestTrackWidth;
-                console.log(widestWidth);
-                const bodyWidth = parseFloat(getComputedStyle(this.closest("body")).width);
                 this.delay = parseFloat(this.style.left) / parseFloat(waveformTrack.style.width) * this.duration;
                 this.closest("body").style.width = widestWidth + 100 + "px";
                 this.closest("song-div").updateTimeline();

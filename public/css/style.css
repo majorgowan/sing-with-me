@@ -105,6 +105,29 @@ header {
     right: 5px;
     display: inline-block;
 }
+.volume-slider {
+    -webkit-appearance: none;
+    position: absolute;
+    width: 80px;
+    height: 6px;
+    bottom: 50px;
+    right: 5px;
+    border-radius: 12px;
+    background-color: palegoldenrod;
+}
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 5px;
+    height: 15px;
+    background-color: saddlebrown;
+    border-radius: 3px;
+}
+.volume-slider::-moz-range-thumb {
+    width: 5px;
+    height: 15px;
+    background-color: saddlebrown;
+    border-radius: 3px;
+}
 .swm-checkbox {
     padding: 7px;
     border-radius: 15px;
@@ -139,7 +162,7 @@ header {
     display: flex;
     flex-direction: column;
     background-color: aliceblue;
-    border-radius: 15px;
+    border-radius: 12px;
 }
 .track-detail-head-div {
     display: flex;
@@ -159,7 +182,7 @@ header {
     /* flex: 0 0 60%;  /* don't grow, don't shrink, basis = 60% */
     border: 1.5px solid saddlebrown;
     background-color: blanchedalmond;
-    border-radius: 20px;
+    border-radius: 12px;
 }
 .waveform-wrapper {
     position: relative;

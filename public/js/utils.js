@@ -10,6 +10,8 @@ export const makeWaveSurfer = (songTrack, blobUrl) => {
         "container": songTrack.querySelector(".waveform-track"),
         "waveColor": "darkgreen",
         "progressColor": "olive",
+        "barWidth": 2,
+        "barRadius": 4,
         "interact": false,
         "normalize": true,
         // "plugins": [
@@ -53,6 +55,8 @@ export const makeWaveRecorder = async (newTrack, recorder) => {
         "container": newTrack.querySelector(".waveform-track"),
         "waveColor": "darkgreen",
         "progressColor": "olive",
+        "barWidth": 2,
+        "barRadius": 4,
         "interact": false,
         "normalize": true,
         "plugins": [

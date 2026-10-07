@@ -44,7 +44,7 @@ class Song extends HTMLElement {
             if (e.target.closest(".play-all-button")) {
                 e.preventDefault();
                 this.tracks.forEach(songTrack => {
-                    songTrack.playTrack(null, true);
+                    songTrack.playTrack(songTrack.volumeFactor, true);
                 });
             } else if (e.target.closest(".add-new-track-button")) {
                 e.preventDefault();
@@ -144,6 +144,7 @@ class Song extends HTMLElement {
                 </div>
             `
         }
+        this.closest("body").style.width = this.widestTrackWidth + 50 + "px";
         console.log(timelineItems);
     }
 
