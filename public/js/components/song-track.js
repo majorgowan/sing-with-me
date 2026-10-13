@@ -4,7 +4,8 @@ import {
     deleteAudioFromS3,
     makeWaveSurfer,
     makeWaveRecorder,
-    editTrack
+    editTrack,
+    midifyTrack
 } from "../utils.js";
 
 
@@ -74,6 +75,7 @@ class SongTrack extends HTMLElement {
                             <button class="swm-button dots-button">&#x22EE;</button>
                             <div class="dots-menu">
                                 <button class="duplicate-button">Duplicate</button>
+                                <button class="save-track-button ${!this.modified ? 'hidden-menu-button' : ''}">Save</button>
                                 <button class="rename-track-button ${!isOwner ? 'hidden-menu-button' : ''}">Rename</button>
                                 <button class="delete-track-button ${!isOwner ? 'hidden-menu-button' : ''}">Delete</button>
                                 <button class="confirm-delete-track-button hidden-menu-button">Confirm</button>
@@ -87,6 +89,7 @@ class SongTrack extends HTMLElement {
                         <div>
                             <button class="swm-button play-track-button" type="button">Play</button>
                             <button class="swm-button stop-track-button" type="button">Stop</button>
+                            <button class="swm-button midify-track-button" type="button">Midify</button>
                         </div>
                     </div>
                 </div>
@@ -167,6 +170,7 @@ class SongTrack extends HTMLElement {
         } else {
             this.modified = true;
             this.querySelector(".modified-div").classList.remove("hidden-div");
+            this.querySelector(".save-track-button").classList.remove("hidden-menu-button");
         }
     }
 
@@ -251,6 +255,24 @@ class SongTrack extends HTMLElement {
             } else if (e.target.closest(".stop-track-button")) {
                 e.preventDefault();
                 this.stopTrack();
+            } else if (e.target.closest(".midify-track-button")) {
+                e.preventDefault();
+                console.log("midify track please!");
+                const midiBlobUrl = await midifyTrack(this);
+                const midiTrack = document.createElement("song-track");
+                const timeStamp = `${Date.now()}`;
+                const createdBy = this.getAttribute("created-by");
+                midiTrack.setAttribute("trackId", timeStamp);
+                midiTrack.setAttribute("filename", this.getAttribute("filename") + `-midi-${timeStamp}`);
+                // create a url for the audio blob
+                midiTrack.setAttribute("blobUrl", midiBlobUrl);
+                midiTrack.setAttribute("description", this.getAttribute("description") + " (midified)");
+                midiTrack.setAttribute("created-by", createdBy);
+                midiTrack.setAttribute("delay", this.delay);
+                midiTrack.setAttribute("saved", "false");
+                // add the dupTrack below this track
+                console.log(midiTrack);
+                this.after(midiTrack);
             } else if (e.target.closest(".dots-button")) {
                 e.preventDefault();
                 dotsMenuWrap.classList.toggle("open-menu");
@@ -272,6 +294,12 @@ class SongTrack extends HTMLElement {
                 // add the dupTrack below this track
                 console.log(dupTrack);
                 this.after(dupTrack);
+                // close the dots menu
+                dotsMenuWrap.classList.remove("open-menu");
+            } else if (e.target.closest(".save-track-button")) {
+                e.preventDefault();
+                await uploadAudioToS3(this.recordedBlob, this.getAttribute("filename"));
+                this.setAttribute("saved", "true");
                 // close the dots menu
                 dotsMenuWrap.classList.remove("open-menu");
             } else if (e.target.closest(".delete-track-button")) {

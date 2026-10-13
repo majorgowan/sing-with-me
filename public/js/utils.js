@@ -1,13 +1,24 @@
 import WaveSurfer from "https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js";
 import RecordPlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/record.esm.js";
-import TimelinePlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/timeline.esm.js";
+// import TimelinePlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/timeline.esm.js";
 import encode from "https://esm.sh/@audio/encode"
+
+// import essentia library
+import Essentia from 'https://cdn.jsdelivr.net/npm/essentia.js@0.1.1/dist/essentia.js-core.es.js';
+// import essentia-wasm-module
+import { EssentiaWASM } from 'https://cdn.jsdelivr.net/npm/essentia.js@0.1.1/dist/essentia-wasm.es.js';
+
+// import Tone.js library
+import * as Tone from "https://esm.sh/tone@15.5.54";
+
+const essentia = new Essentia(EssentiaWASM);
 
 
 export const makeWaveSurfer = (songTrack, blobUrl) => {
 
     const wavesurfer = WaveSurfer.create({
         "container": songTrack.querySelector(".waveform-track"),
+        "sampleRate": 44100,
         "waveColor": "darkgreen",
         "progressColor": "olive",
         "barWidth": 2,
@@ -53,6 +64,7 @@ export const makeWaveRecorder = async (newTrack, recorder) => {
     // Create a new Wavesurfer instance
     const newRecorder = WaveSurfer.create({
         "container": newTrack.querySelector(".waveform-track"),
+        "sampleRate": 44100,
         "waveColor": "darkgreen",
         "progressColor": "olive",
         "barWidth": 2,
@@ -288,5 +300,103 @@ export const editTrack = async (songTrack, start, end, operation) => {
     // const url = URL.createObjectURL(blob)
     // wavesurfer.load(url)
     //
+
+};
+
+
+export const analyzeTrack = async (songTrack) => {
+    console.log(essentia.version);
+    const audioBuffer = songTrack.wavesurfer.getDecodedData();
+
+    try {
+        // Step 1: test arrayToVector alone
+        const channelData = audioBuffer.getChannelData(0);
+        console.log("Channel data length:", channelData.length, "bytes:", channelData.length * 4);
+
+        const signal = essentia.arrayToVector(channelData);
+        console.log("arrayToVector: OK");
+
+        // Step 2: test the algorithm
+        console.log("sample rate: ", audioBuffer.sampleRate);
+        const rhythm = essentia.RhythmExtractor2013(signal);
+        console.log("RhythmExtractor2013: OK, BPM:", rhythm.bpm);
+        const key = essentia.KeyExtractor(signal);
+        console.log("Key: ", key);
+
+        // Melody → MIDI notes
+        const melodia = essentia.PredominantPitchMelodia(signal);
+        const segments = essentia.PitchContourSegmentation(melodia.pitch, signal);
+
+        const notes = essentia.vectorToArray(segments.MIDIpitch);
+        const onsets = essentia.vectorToArray(segments.onset);
+        const durations = essentia.vectorToArray(segments.duration);
+
+        const clean = notes.map((n, i) => durations[i] > 0.08 ? n : null).filter(n => n !== null);
+
+        // console.log({
+        //     bpm: rhythm.bpm,
+        //     key: `${key.key} ${key.scale}`,
+        //     notes,
+        //     onsets,
+        //     durations,
+        //     clean
+        // });
+
+        return {
+            bpm: rhythm.bpm,
+            key: `${key.key} ${key.scale}`,
+            notes,
+            onsets,
+            durations,
+            clean
+        };
+
+    } catch (e) {
+        console.error("FAILED at:", e);
+    }
+
+    // console.log(audioBuffer.sampleRate, audioBuffer.duration, audioBuffer.numberOfChannels);
+    //
+    // const signal = essentia.arrayToVector(audioBuffer.getChannelData(0));
+    //
+    // const rhythm = essentia.RhythmExtractor2013(signal, audioBuffer.sampleRate);
+    // console.log("BPM:", rhythm.bpm);
+};
+
+
+export const midifyTrack = async (songTrack) => {
+    console.log(essentia.version);
+
+    const midiData = await analyzeTrack(songTrack);
+    const totalDuration = midiData.onsets.at(-1) + 2;
+    console.log(midiData);
+
+    // use Tone.js to build audio buffer out of notes, onsets, durations
+    const buffer = await Tone.Offline(({ transport }) => {
+        const synth = new Tone.Synth().toDestination();
+
+        midiData.notes.forEach((midi, i) => {
+            transport.schedule((t) => {
+                synth.triggerAttackRelease(Tone.Frequency(midi, "midi").toNote(), midiData.durations[i], t);
+            }, midiData.onsets[i]);
+            // console.log(midi, "yo!");
+        });
+        transport.start(0);
+    }, totalDuration);
+
+    // create audioBlob from the audioBuffer
+    const audioBuffer = buffer.get(); // native AudioBuffer
+    const channelData = audioBuffer.getChannelData(0); // Float32Array
+
+    const bytes = await encode.webm(channelData, {
+        sampleRate: audioBuffer.sampleRate
+    });
+
+    const blob = new Blob([bytes], { type: "audio/webm" });
+    const url = URL.createObjectURL(blob);
+
+    return url;
+
+    console.log(buffer);
 
 };
