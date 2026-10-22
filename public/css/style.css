@@ -144,7 +144,7 @@ header {
     flex-direction: row;
     margin: 10px 0;
 }
-.description-input {
+.title-input {
     background-color: aliceblue;
     border: none;
     font-size: large;

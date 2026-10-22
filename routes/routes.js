@@ -84,13 +84,15 @@ router.get("/song", async (req, res) => {
             "tracks": [
                 {
                     "id": 1,
-                    "description": "track 1",
+                    "title": "track 1",
+                    "description": "",
                     "createdBy": "Mark",
                     "filename": "recording-1787261502629.webm"
                 },
                 {
                     "id": 2,
-                    "description": "track 2",
+                    "title": "track 2",
+                    "description": "",
                     "createdBy": "Mathieu",
                     "filename": "recording-1787261502629.webm"
                 }

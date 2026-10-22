@@ -56,7 +56,8 @@ class Song extends HTMLElement {
                 const el = document.createElement("new-track");
                 el.setAttribute("trackId", timeStamp);
                 el.setAttribute("filename", `${userName}-${timeStamp}.webm`);
-                el.setAttribute("description", "New track");
+                el.setAttribute("title", "New track");
+                el.setAttribute("description", "");
                 el.setAttribute("created-by", userName);
                 el.setAttribute("saved", "false");
                 // add this track to the DOM

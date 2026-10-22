@@ -8,7 +8,7 @@ const router = express.Router();
 router.post("/compose", async (req, res) => {
     console.log(req.body);
 
-    const instruction = "a bass harmony sequence  to complement the melody"
+    const instruction = "a bass harmony sequence to complement the melody"
 
     try {
 
@@ -20,17 +20,22 @@ router.post("/compose", async (req, res) => {
         const processed = parseFromLLM(content, {"mode": "repair"});
         console.log(processed);
 
+        return res.json({
+            "cerebras": processed
+        });
+
     } catch (err) {
         if (err.status === 429) {
             console.error(err);
         } else {
             console.error(err);
         }
+        return res.status(err.status === 429 ? 429 : 500).json({
+            "cerebras": null,
+            "error": err.message
+        });
     }
 
-    return res.json({
-        "cerebras": processed
-    });
 });
 
 export default router;

@@ -35,6 +35,7 @@ class SongTrack extends HTMLElement {
     render() {
         const trackId = this.getAttribute("trackId");
         const filename = this.getAttribute("filename");
+        const title = this.getAttribute("title");
         const description = this.getAttribute("description");
         const createdBy = this.getAttribute("created-by");
         // get the username of the logged in user (certain features only if track owned by that user)
@@ -59,7 +60,7 @@ class SongTrack extends HTMLElement {
                     <div class="track-detail-head-div">
                         <div>
                             <div>
-                                <input class="description-input" type="text" value="${description}" ${this.setReadOnly()}>
+                                <input class="title-input" type="text" value="${title}" ${this.setReadOnly()}>
                             </div>
                             <div>
                                 By: ${createdBy}
@@ -121,6 +122,7 @@ class SongTrack extends HTMLElement {
         return {
             "trackId": this.getAttribute("trackId"),
             "filename": this.getAttribute("filename"),
+            "title": this.getAttribute("title"),
             "description": this.getAttribute("description"),
             "saved": this.getAttribute("saved"),
             "duration": this.duration,
@@ -200,7 +202,7 @@ class SongTrack extends HTMLElement {
     }
 
     isMuted() {
-        console.log(this.getAttribute("description") + " muted?: " + this.querySelector(".mute-checkbox").checked);
+        console.log(this.getAttribute("title") + " muted?: " + this.querySelector(".mute-checkbox").checked);
         return this.querySelector(".mute-checkbox").checked;
     }
 
@@ -268,7 +270,8 @@ class SongTrack extends HTMLElement {
                 midiTrack.setAttribute("filename", this.getAttribute("filename") + `-midi-${timeStamp}`);
                 // create a url for the audio blob
                 midiTrack.setAttribute("blobUrl", midiBlobUrl);
-                midiTrack.setAttribute("description", this.getAttribute("description") + " (midified)");
+                midiTrack.setAttribute("title", this.getAttribute("title") + " (midified)");
+                midiTrack.setAttribute("description", `Midified version of ${this.getAttribute("title")}`);
                 midiTrack.setAttribute("created-by", createdBy);
                 midiTrack.setAttribute("delay", this.delay);
                 midiTrack.setAttribute("saved", "false");
@@ -276,9 +279,26 @@ class SongTrack extends HTMLElement {
                 console.log(midiTrack);
                 this.after(midiTrack);
             } else if (e.target.closest(".ai-track-button")) {
+                e.preventDefault();
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-                const blahBlah = await aiTrack(this, csrfToken);
-                console.log(blahBlah);
+                const { cerebras, blobUrl } = await aiTrack(this, csrfToken);
+
+                const midiTrack = document.createElement("song-track");
+                const timeStamp = `${Date.now()}`;
+                const createdBy = this.getAttribute("created-by");
+                midiTrack.setAttribute("trackId", timeStamp);
+                midiTrack.setAttribute("filename", this.getAttribute("filename") + `-ai-${timeStamp}`);
+                // create a url for the audio blob
+                midiTrack.setAttribute("blobUrl", blobUrl);
+                midiTrack.setAttribute("title", this.getAttribute("title") + " (ai accompaniment)");
+                midiTrack.setAttribute("description", cerebras.description);
+                midiTrack.setAttribute("created-by", createdBy);
+                midiTrack.setAttribute("delay", this.delay);
+                midiTrack.setAttribute("saved", "false");
+                // add the dupTrack below this track
+                console.log(midiTrack);
+                this.after(midiTrack);
+
             } else if (e.target.closest(".dots-button")) {
                 e.preventDefault();
                 dotsMenuWrap.classList.toggle("open-menu");
@@ -293,7 +313,8 @@ class SongTrack extends HTMLElement {
                 dupTrack.setAttribute("filename", this.getAttribute("filename") + `-copy-${timeStamp}`);
                 // create a url for the audio blob
                 dupTrack.setAttribute("blobUrl", URL.createObjectURL(this.recordedBlob));
-                dupTrack.setAttribute("description", this.getAttribute("description") + " (copy)");
+                dupTrack.setAttribute("title", this.getAttribute("title") + " (copy)");
+                dupTrack.setAttribute("description", this.getAttribute("description"));
                 dupTrack.setAttribute("created-by", createdBy);
                 dupTrack.setAttribute("delay", this.delay);
                 dupTrack.setAttribute("saved", "false");
@@ -418,8 +439,8 @@ class SongTrack extends HTMLElement {
             }
         });
         this.addEventListener("change", (e) => {
-            if (e.target.closest(".description-input")) {
-                this.setAttribute("description", e.target.value);
+            if (e.target.closest(".title-input")) {
+                this.setAttribute("title", e.target.value);
             }
         });
     }

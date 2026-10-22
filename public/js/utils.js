@@ -379,12 +379,9 @@ const analyzeTrack = async (songTrack) => {
 };
 
 
-export const midifyTrack = async (songTrack) => {
-    console.log(essentia.version);
+async function midiToBlob(midiData) {
 
-    const midiData = await analyzeTrack(songTrack);
     const totalDuration = midiData.onsets.at(-1) + 2;
-    console.log(midiData);
 
     // use Tone.js to build audio buffer out of notes, onsets, durations
     const buffer = await Tone.Offline(({ transport }) => {
@@ -409,6 +406,18 @@ export const midifyTrack = async (songTrack) => {
 
     const blob = new Blob([bytes], { type: "audio/webm" });
     const url = URL.createObjectURL(blob);
+
+    return url;
+
+}
+
+
+export const midifyTrack = async (songTrack) => {
+    console.log(essentia.version);
+
+    const midiData = await analyzeTrack(songTrack);
+
+    const url = await midiToBlob(midiData);
 
     return url;
 
@@ -440,39 +449,24 @@ export const aiTrack = async (songTrack, csrfToken) => {
         throw new Error(`Compose failed: ${response.status}`);
     }
 
-    return response.json();
+    const cerebrasResponse = await response.json();
 
+    console.log(cerebrasResponse);
 
-    return "blah blah blahhhhhhhhhhhhhhh";
+    const cerebrasMidiData = {
+        "notes": cerebrasResponse.cerebras.midiSequence.map(([note, onset]) => note),
+        "onsets": cerebrasResponse.cerebras.midiSequence.map(([note, onset]) => onset),
+        "durations": cerebrasResponse.cerebras.midiSequence.map(([note, onset]) => 0.25)
+    };
 
+    console.log(cerebrasMidiData);
 
-    const totalDuration = midiData.onsets.at(-1) + 2;
+    const url = await midiToBlob(cerebrasMidiData);
 
-    // use Tone.js to build audio buffer out of notes, onsets, durations
-    const buffer = await Tone.Offline(({ transport }) => {
-        const synth = new Tone.Synth().toDestination();
-
-        midiData.notes.forEach((midi, i) => {
-            transport.schedule((t) => {
-                synth.triggerAttackRelease(Tone.Frequency(midi, "midi").toNote(), midiData.durations[i], t);
-            }, midiData.onsets[i]);
-            // console.log(midi, "yo!");
-        });
-        transport.start(0);
-    }, totalDuration);
-
-    // create audioBlob from the audioBuffer
-    const audioBuffer = buffer.get(); // native AudioBuffer
-    const channelData = audioBuffer.getChannelData(0); // Float32Array
-
-    const bytes = await encode.webm(channelData, {
-        sampleRate: audioBuffer.sampleRate
-    });
-
-    const blob = new Blob([bytes], { type: "audio/webm" });
-    const url = URL.createObjectURL(blob);
-
-    return url;
+    return {
+        "blobUrl": url,
+        "cerebras": cerebrasResponse.cerebras
+    };
 
 };
 

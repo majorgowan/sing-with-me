@@ -89,6 +89,7 @@
         <% for (track of song.tracks) { %>
             <song-track trackId="<%= track.trackId %>"
                         filename="<%= track.filename %>"
+                        title="<%= track.title %>"
                         description="<%= track.description %>"
                         created-by="<%= track.createdBy %>"
                         delay="<%= track.delay ? track.delay : 0 %>"
