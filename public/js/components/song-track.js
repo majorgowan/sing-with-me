@@ -5,7 +5,8 @@ import {
     makeWaveSurfer,
     makeWaveRecorder,
     editTrack,
-    midifyTrack
+    midifyTrack,
+    aiTrack
 } from "../utils.js";
 
 
@@ -90,6 +91,7 @@ class SongTrack extends HTMLElement {
                             <button class="swm-button play-track-button" type="button">Play</button>
                             <button class="swm-button stop-track-button" type="button">Stop</button>
                             <button class="swm-button midify-track-button" type="button">Midify</button>
+                            <button class="swm-button ai-track-button" type="button">AI</button>
                         </div>
                     </div>
                 </div>
@@ -273,6 +275,10 @@ class SongTrack extends HTMLElement {
                 // add the dupTrack below this track
                 console.log(midiTrack);
                 this.after(midiTrack);
+            } else if (e.target.closest(".ai-track-button")) {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+                const blahBlah = await aiTrack(this, csrfToken);
+                console.log(blahBlah);
             } else if (e.target.closest(".dots-button")) {
                 e.preventDefault();
                 dotsMenuWrap.classList.toggle("open-menu");

@@ -13,6 +13,8 @@ import * as Tone from "https://esm.sh/tone@15.5.54";
 
 const essentia = new Essentia(EssentiaWASM);
 
+const MINPXPERSEC = 10;
+
 
 export const makeWaveSurfer = (songTrack, blobUrl) => {
 
@@ -25,6 +27,8 @@ export const makeWaveSurfer = (songTrack, blobUrl) => {
         "barRadius": 4,
         "interact": false,
         "normalize": true,
+        "fillParent": false,
+        "minPxPerSec": MINPXPERSEC,
         // "plugins": [
         //     TimelinePlugin.create()
         // ],
@@ -42,6 +46,9 @@ export const makeWaveSurfer = (songTrack, blobUrl) => {
     wavesurfer.on("ready", () => {
         songTrack.setDuration(wavesurfer.getDuration());
         console.log(`Ready, duration: ${songTrack.duration}`);
+        // set width of containing div proportional to duration
+        const container =  songTrack.querySelector(".waveform-track");
+        container.style.width = `${wavesurfer.getDuration() * MINPXPERSEC * 1.01}px`;
         songTrack.closest("song-div").updateTimeline();
     });
 
@@ -71,6 +78,8 @@ export const makeWaveRecorder = async (newTrack, recorder) => {
         "barRadius": 4,
         "interact": false,
         "normalize": true,
+        "fillParent": false,
+        "minPxPerSec": MINPXPERSEC,
         "plugins": [
             RecordPlugin.create({
                 scrollingWaveform: true, // Optional: scroll waveform while recording
@@ -89,6 +98,9 @@ export const makeWaveRecorder = async (newTrack, recorder) => {
 
     newRecorder.on("ready", () => {
         newTrack.setDuration(newRecorder.getDuration());
+        // set width of containing div proportional to duration
+        const container =  songTrack.querySelector(".waveform-track");
+        container.style.width = `${wavesurfer.getDuration() * MINPXPERSEC * 1.01}px`;
         newTrack.closest("song-div").updateTimeline();
     });
 
@@ -304,7 +316,7 @@ export const editTrack = async (songTrack, start, end, operation) => {
 };
 
 
-export const analyzeTrack = async (songTrack) => {
+const analyzeTrack = async (songTrack) => {
     console.log(essentia.version);
     const audioBuffer = songTrack.wavesurfer.getDecodedData();
 
@@ -331,7 +343,9 @@ export const analyzeTrack = async (songTrack) => {
         const onsets = essentia.vectorToArray(segments.onset);
         const durations = essentia.vectorToArray(segments.duration);
 
-        const clean = notes.map((n, i) => durations[i] > 0.08 ? n : null).filter(n => n !== null);
+        const cleanNotes = Array.from(notes).map((n, i) => durations[i] > 0.1 && n > 0 ? n : null).filter(n => n !== null);
+        const cleanOnsets = Array.from(onsets).map((t, i) => durations[i] > 0.1 && notes[i] > 0 ? t : null).filter(t => t !== null);
+        const cleanDurations = Array.from(durations).map((d, i) => durations[i] > 0.1 && notes[i] > 0 ? d : null).filter(d => d !== null);
 
         // console.log({
         //     bpm: rhythm.bpm,
@@ -342,13 +356,14 @@ export const analyzeTrack = async (songTrack) => {
         //     clean
         // });
 
+        console.log(Array.from(cleanNotes).map((n, i) => `(${n}, ${cleanOnsets[i].toFixed(1)})`).join(", "));
+
         return {
-            bpm: rhythm.bpm,
-            key: `${key.key} ${key.scale}`,
-            notes,
-            onsets,
-            durations,
-            clean
+            "bpm": rhythm.bpm,
+            "key": `${key.key} ${key.scale}`,
+            "notes": cleanNotes,
+            "onsets": cleanOnsets,
+            "durations": cleanDurations
         };
 
     } catch (e) {
@@ -397,6 +412,67 @@ export const midifyTrack = async (songTrack) => {
 
     return url;
 
-    console.log(buffer);
+};
+
+
+export const aiTrack = async (songTrack, csrfToken) => {
+    console.log(essentia.version);
+
+    const midiData = await analyzeTrack(songTrack);
+
+    const midiString = Array.from(midiData.notes).map(
+        (n, i) => `(${n}, ${midiData.onsets[i].toFixed(1)}), ${midiData.durations[i].toFixed(1)}`
+    ).join(", ");
+
+    console.log(midiString);
+
+    // TODO: have server call GPT to compose harmony
+    const response = await fetch("/api/compose", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": csrfToken
+        },
+        body: JSON.stringify({ midiData })
+    });
+
+    if (!response.ok) {
+        throw new Error(`Compose failed: ${response.status}`);
+    }
+
+    return response.json();
+
+
+    return "blah blah blahhhhhhhhhhhhhhh";
+
+
+    const totalDuration = midiData.onsets.at(-1) + 2;
+
+    // use Tone.js to build audio buffer out of notes, onsets, durations
+    const buffer = await Tone.Offline(({ transport }) => {
+        const synth = new Tone.Synth().toDestination();
+
+        midiData.notes.forEach((midi, i) => {
+            transport.schedule((t) => {
+                synth.triggerAttackRelease(Tone.Frequency(midi, "midi").toNote(), midiData.durations[i], t);
+            }, midiData.onsets[i]);
+            // console.log(midi, "yo!");
+        });
+        transport.start(0);
+    }, totalDuration);
+
+    // create audioBlob from the audioBuffer
+    const audioBuffer = buffer.get(); // native AudioBuffer
+    const channelData = audioBuffer.getChannelData(0); // Float32Array
+
+    const bytes = await encode.webm(channelData, {
+        sampleRate: audioBuffer.sampleRate
+    });
+
+    const blob = new Blob([bytes], { type: "audio/webm" });
+    const url = URL.createObjectURL(blob);
+
+    return url;
 
 };
+
