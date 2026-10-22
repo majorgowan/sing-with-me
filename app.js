@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import routes from "./routes/routes.js";
 import s3Routes from "./routes/s3_routes.js";
 import authRoutes from "./routes/auth_routes.js";
+import apiRoutes from "./routes/api_routes.js";
 import { connectToDatabase } from "./utils/db.js";
 import { handleGlobalError, handleCsrfError, handleMongoError } from "./routes/errors.js";
 
@@ -59,10 +60,17 @@ app.use(csrfProtection);
 // Expose static files in public folder
 app.use(express.static("public"));
 
+// note all requests in the console
+app.use((req, res, next) => {
+    console.log("HIT:", req.method, req.url);
+    next();
+});
+
 // Routes
 app.use("/", routes);
 app.use("/s3", s3Routes);
 app.use("/", authRoutes);
+app.use("/api", apiRoutes);
 
 // Error handlers
 app.use(handleCsrfError);
