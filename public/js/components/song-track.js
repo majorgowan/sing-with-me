@@ -9,6 +9,12 @@ import {
     aiTrack
 } from "../utils.js";
 
+import {
+    analyzeRhythm,
+    analyzeKey,
+    analyzeMelody
+} from "../worker-manager.js";
+
 
 class SongTrack extends HTMLElement {
     // can omit constructor if not using Shadow DOM
@@ -280,8 +286,24 @@ class SongTrack extends HTMLElement {
                 this.after(midiTrack);
             } else if (e.target.closest(".ai-track-button")) {
                 e.preventDefault();
+
+                console.log("ANALYZING RHYTHM YO!!!!!!!!!");
+                const audioBuffer = this.wavesurfer.getDecodedData();
+                const channelData = audioBuffer.getChannelData(0);
+                const myRhythm = await analyzeRhythm(channelData, (value) => {console.log(`progress: ${value}`)});
+                const myKey = await analyzeKey(channelData, (value) => {console.log(`progress: ${value}`)});
+                const myMelody = await analyzeMelody(channelData, (value) => {console.log(`progress: ${value}`)});
+
+                const midiData = {
+                    ...myMelody,
+                    "bpm": myRhythm.bpm,
+                    "key": `${myKey.key} ${myKey.scale}`
+                }
+
+                console.log(midiData);
+
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-                const { cerebras, blobUrl } = await aiTrack(this, csrfToken);
+                const { cerebras, blobUrl } = await aiTrack(midiData, csrfToken);
 
                 const midiTrack = document.createElement("song-track");
                 const timeStamp = `${Date.now()}`;

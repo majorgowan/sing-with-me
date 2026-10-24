@@ -43,7 +43,7 @@ export const analyze = async (instruction, midiData, verbose=false) => {
     //       - chordProgression: pairs of (chordName, function in key, onset, duration)
 
     const midiString = midiData.notes.map(
-        (n, i) => `(${n}, ${midiData.onsets[i].toFixed(1)}), ${midiData.durations[i].toFixed(1)}`
+        (n, i) => `(${n}, ${midiData.onsets[i].toFixed(1)})`
     ).join(", ");
 
     const prompt = `

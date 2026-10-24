@@ -1,5 +1,3 @@
-
-
 class Song extends HTMLElement {
 
     #observer = null;

@@ -424,10 +424,8 @@ export const midifyTrack = async (songTrack) => {
 };
 
 
-export const aiTrack = async (songTrack, csrfToken) => {
+export const aiTrack = async (midiData, csrfToken) => {
     console.log(essentia.version);
-
-    const midiData = await analyzeTrack(songTrack);
 
     const midiString = Array.from(midiData.notes).map(
         (n, i) => `(${n}, ${midiData.onsets[i].toFixed(1)}), ${midiData.durations[i].toFixed(1)}`

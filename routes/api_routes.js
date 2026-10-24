@@ -9,6 +9,7 @@ router.post("/compose", async (req, res) => {
     console.log(req.body);
 
     const instruction = "a bass harmony sequence to complement the melody"
+    // const instruction = "a midi sequence to harmonically complement the melody"
 
     try {
 
