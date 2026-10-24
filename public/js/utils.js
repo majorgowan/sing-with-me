@@ -353,10 +353,8 @@ export const midifyTrack = async (midiData) => {
 
 
 export const aiTrack = async (midiData, csrfToken) => {
-    console.log(essentia.version);
-
     const midiString = Array.from(midiData.notes).map(
-        (n, i) => `(${n}, ${midiData.onsets[i].toFixed(1)}), ${midiData.durations[i].toFixed(1)}`
+        (n, i) => `(${n}, ${midiData.onsets[i].toFixed(1)}, ${midiData.durations[i].toFixed(1)})`
     ).join(", ");
 
     console.log(midiString);
@@ -379,10 +377,15 @@ export const aiTrack = async (midiData, csrfToken) => {
 
     console.log(cerebrasResponse);
 
+    const notes = cerebrasResponse.cerebras.midiSequence.map(([note, onset, duration]) => note);
+    const onsets = cerebrasResponse.cerebras.midiSequence.map(([note, onset, duration]) => onset);
+    const durations = cerebrasResponse.cerebras.midiSequence.map(([note, onset, duration]) => duration);
+
     const cerebrasMidiData = {
-        "notes": cerebrasResponse.cerebras.midiSequence.map(([note, onset]) => note),
-        "onsets": cerebrasResponse.cerebras.midiSequence.map(([note, onset]) => onset),
-        "durations": cerebrasResponse.cerebras.midiSequence.map(([note, onset]) => 0.25)
+        "notes": notes,
+        "onsets": onsets.map((onset, i) => i > 0 ? Math.max(onset, onsets[i - 1] + 0.01) : onset),
+        "durations": durations.map((duration, i) =>
+            i < durations.length - 1 ? Math.min(duration, onsets[i + 1] - onsets[i] - 0.01) : duration)
     };
 
     console.log(cerebrasMidiData);
