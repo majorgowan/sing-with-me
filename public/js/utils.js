@@ -3,15 +3,9 @@ import RecordPlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/record.
 // import TimelinePlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/timeline.esm.js";
 import encode from "https://esm.sh/@audio/encode"
 
-// import essentia library
-import Essentia from 'https://cdn.jsdelivr.net/npm/essentia.js@0.1.1/dist/essentia.js-core.es.js';
-// import essentia-wasm-module
-import { EssentiaWASM } from 'https://cdn.jsdelivr.net/npm/essentia.js@0.1.1/dist/essentia-wasm.es.js';
-
 // import Tone.js library
 import * as Tone from "https://esm.sh/tone@15.5.54";
 
-const essentia = new Essentia(EssentiaWASM);
 
 const MINPXPERSEC = 10;
 
@@ -316,69 +310,6 @@ export const editTrack = async (songTrack, start, end, operation) => {
 };
 
 
-const analyzeTrack = async (songTrack) => {
-    console.log(essentia.version);
-    const audioBuffer = songTrack.wavesurfer.getDecodedData();
-
-    try {
-        // Step 1: test arrayToVector alone
-        const channelData = audioBuffer.getChannelData(0);
-        console.log("Channel data length:", channelData.length, "bytes:", channelData.length * 4);
-
-        const signal = essentia.arrayToVector(channelData);
-        console.log("arrayToVector: OK");
-
-        // Step 2: test the algorithm
-        console.log("sample rate: ", audioBuffer.sampleRate);
-        const rhythm = essentia.RhythmExtractor2013(signal);
-        console.log("RhythmExtractor2013: OK, BPM:", rhythm.bpm);
-        const key = essentia.KeyExtractor(signal);
-        console.log("Key: ", key);
-
-        // Melody → MIDI notes
-        const melodia = essentia.PredominantPitchMelodia(signal);
-        const segments = essentia.PitchContourSegmentation(melodia.pitch, signal);
-
-        const notes = essentia.vectorToArray(segments.MIDIpitch);
-        const onsets = essentia.vectorToArray(segments.onset);
-        const durations = essentia.vectorToArray(segments.duration);
-
-        const cleanNotes = Array.from(notes).map((n, i) => durations[i] > 0.1 && n > 0 ? n : null).filter(n => n !== null);
-        const cleanOnsets = Array.from(onsets).map((t, i) => durations[i] > 0.1 && notes[i] > 0 ? t : null).filter(t => t !== null);
-        const cleanDurations = Array.from(durations).map((d, i) => durations[i] > 0.1 && notes[i] > 0 ? d : null).filter(d => d !== null);
-
-        // console.log({
-        //     bpm: rhythm.bpm,
-        //     key: `${key.key} ${key.scale}`,
-        //     notes,
-        //     onsets,
-        //     durations,
-        //     clean
-        // });
-
-        console.log(Array.from(cleanNotes).map((n, i) => `(${n}, ${cleanOnsets[i].toFixed(1)})`).join(", "));
-
-        return {
-            "bpm": rhythm.bpm,
-            "key": `${key.key} ${key.scale}`,
-            "notes": cleanNotes,
-            "onsets": cleanOnsets,
-            "durations": cleanDurations
-        };
-
-    } catch (e) {
-        console.error("FAILED at:", e);
-    }
-
-    // console.log(audioBuffer.sampleRate, audioBuffer.duration, audioBuffer.numberOfChannels);
-    //
-    // const signal = essentia.arrayToVector(audioBuffer.getChannelData(0));
-    //
-    // const rhythm = essentia.RhythmExtractor2013(signal, audioBuffer.sampleRate);
-    // console.log("BPM:", rhythm.bpm);
-};
-
-
 async function midiToBlob(midiData) {
 
     const totalDuration = midiData.onsets.at(-1) + 2;
@@ -412,10 +343,7 @@ async function midiToBlob(midiData) {
 }
 
 
-export const midifyTrack = async (songTrack) => {
-    console.log(essentia.version);
-
-    const midiData = await analyzeTrack(songTrack);
+export const midifyTrack = async (midiData) => {
 
     const url = await midiToBlob(midiData);
 

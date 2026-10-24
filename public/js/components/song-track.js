@@ -268,7 +268,22 @@ class SongTrack extends HTMLElement {
             } else if (e.target.closest(".midify-track-button")) {
                 e.preventDefault();
                 console.log("midify track please!");
-                const midiBlobUrl = await midifyTrack(this);
+
+                const audioBuffer = this.wavesurfer.getDecodedData();
+                const channelData = audioBuffer.getChannelData(0);
+                const myRhythm = await analyzeRhythm(channelData, (value) => {console.log(`progress: ${value}`)});
+                const myKey = await analyzeKey(channelData, (value) => {console.log(`progress: ${value}`)});
+                const myMelody = await analyzeMelody(channelData, (value) => {console.log(`progress: ${value}`)});
+
+                const midiData = {
+                    ...myMelody,
+                    "bpm": myRhythm.bpm,
+                    "key": `${myKey.key} ${myKey.scale}`
+                }
+
+                console.log(midiData);
+
+                const midiBlobUrl = await midifyTrack(midiData);
                 const midiTrack = document.createElement("song-track");
                 const timeStamp = `${Date.now()}`;
                 const createdBy = this.getAttribute("created-by");
@@ -287,7 +302,6 @@ class SongTrack extends HTMLElement {
             } else if (e.target.closest(".ai-track-button")) {
                 e.preventDefault();
 
-                console.log("ANALYZING RHYTHM YO!!!!!!!!!");
                 const audioBuffer = this.wavesurfer.getDecodedData();
                 const channelData = audioBuffer.getChannelData(0);
                 const myRhythm = await analyzeRhythm(channelData, (value) => {console.log(`progress: ${value}`)});
