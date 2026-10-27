@@ -94,11 +94,12 @@ class SongTrack extends HTMLElement {
                             Mute
                         </label>
                         <input type="range" min="0" max="1" step="0.1" value="1" class="volume-slider">
-                        <div>
+                        <div class="track-detail-buttons">
                             <button class="swm-button play-track-button" type="button">Play</button>
                             <button class="swm-button stop-track-button" type="button">Stop</button>
                             <button class="swm-button midify-track-button" type="button">Midify</button>
                             <button class="swm-button ai-track-button" type="button">AI</button>
+                            <div class="spinner-div ai-spinner-div hidden-div"></div>
                         </div>
                     </div>
                 </div>
@@ -302,6 +303,12 @@ class SongTrack extends HTMLElement {
             } else if (e.target.closest(".ai-track-button")) {
                 e.preventDefault();
 
+                const aiTrackButton = this.querySelector(".ai-track-button");
+                const aiSpinnerDiv = this.querySelector(".ai-spinner-div");
+
+                aiTrackButton.classList.add("hidden-button");
+                aiSpinnerDiv.classList.remove("hidden-div");
+
                 const audioBuffer = this.wavesurfer.getDecodedData();
                 const channelData = audioBuffer.getChannelData(0);
                 const myRhythm = await analyzeRhythm(channelData, (value) => {console.log(`progress: ${value}`)});
@@ -334,6 +341,9 @@ class SongTrack extends HTMLElement {
                 // add the dupTrack below this track
                 console.log(midiTrack);
                 this.after(midiTrack);
+
+                aiTrackButton.classList.remove("hidden-button");
+                aiSpinnerDiv.classList.add("hidden-div");
 
             } else if (e.target.closest(".dots-button")) {
                 e.preventDefault();
