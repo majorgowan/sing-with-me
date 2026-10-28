@@ -8,11 +8,12 @@ const router = express.Router();
 router.post("/compose", async (req, res) => {
     console.log(req.body);
 
-    const instruction = "a bass harmony sequence to complement the melody"
+    const defaultInstruction = "a bass harmony sequence to complement the melody"
     // const instruction = "a midi sequence to harmonically complement the melody"
 
     try {
 
+        const instruction = req.body.instruction !== "" ? req.body.instruction : defaultInstruction;
         const rawAIResponse = await analyze(instruction, req.body.midiData, true);
         console.log(rawAIResponse);
         const content = rawAIResponse.choices[0].message.content;

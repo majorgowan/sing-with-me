@@ -78,21 +78,21 @@ class SongTrack extends HTMLElement {
                         MODIFIED
                         </div>
                     </div>
+                    <div class="dots-menu-wrap">
+                        <button class="swm-button dots-button">&#x22EE;</button>
+                        <div class="dots-menu">
+                            <button class="duplicate-button">Duplicate</button>
+                            <button class="save-track-button ${!this.modified ? 'hidden-menu-button' : ''}">Save</button>
+                            <button class="rename-track-button ${!isOwner ? 'hidden-menu-button' : ''}">Rename</button>
+                            <button class="delete-track-button ${!isOwner ? 'hidden-menu-button' : ''}">Delete</button>
+                            <button class="confirm-delete-track-button hidden-menu-button">Confirm</button>
+                        </div> 
+                    </div>
+                    <label class="swm-checkbox mute-checkbox-label">
+                        <input type="checkbox" class="mute-checkbox">
+                        Mute
+                    </label>
                     <div class="track-buttons-div">
-                        <div class="dots-menu-wrap">
-                            <button class="swm-button dots-button">&#x22EE;</button>
-                            <div class="dots-menu">
-                                <button class="duplicate-button">Duplicate</button>
-                                <button class="save-track-button ${!this.modified ? 'hidden-menu-button' : ''}">Save</button>
-                                <button class="rename-track-button ${!isOwner ? 'hidden-menu-button' : ''}">Rename</button>
-                                <button class="delete-track-button ${!isOwner ? 'hidden-menu-button' : ''}">Delete</button>
-                                <button class="confirm-delete-track-button hidden-menu-button">Confirm</button>
-                            </div> 
-                        </div>
-                        <label class="swm-checkbox mute-checkbox-label">
-                            <input type="checkbox" class="mute-checkbox">
-                            Mute
-                        </label>
                         <input type="range" min="0" max="1" step="0.1" value="1" class="volume-slider">
                         <div class="track-detail-buttons">
                             <button class="swm-button play-track-button" type="button">Play</button>
@@ -100,6 +100,13 @@ class SongTrack extends HTMLElement {
                             <button class="swm-button midify-track-button" type="button">Midify</button>
                             <button class="swm-button ai-track-button" type="button">AI</button>
                             <div class="spinner-div ai-spinner-div hidden-div"></div>
+                        </div>
+                    </div>
+                    <div class="input-overlay hidden-div">
+                        <textarea class="input-overlay-input" rows="4" placeholder="instructions for AI composer"></textarea>
+                        <div class="input-overlay-buttons-div">
+                            <button class="swm-button ai-submit-button">Submit</button>
+                            <button class="swm-button ai-cancel-button">Cancel</button>
                         </div>
                     </div>
                 </div>
@@ -303,6 +310,26 @@ class SongTrack extends HTMLElement {
             } else if (e.target.closest(".ai-track-button")) {
                 e.preventDefault();
 
+                // reveal the overlay
+                const inputOverlay = this.querySelector(".input-overlay");
+                inputOverlay.classList.remove("hidden-div");
+
+            } else if (e.target.closest(".ai-cancel-button")) {
+
+                // remove the overlay and do nothing
+                const inputOverlay = this.querySelector(".input-overlay");
+                inputOverlay.classList.add("hidden-div");
+
+            } else if (e.target.closest(".ai-submit-button")) {
+
+                // remove the overlay and get the text
+                const inputOverlay = this.querySelector(".input-overlay");
+                inputOverlay.classList.add("hidden-div");
+
+                const aiInstructionText = this.querySelector(".input-overlay-input").value;
+                console.log(aiInstructionText);
+
+                // remove the AI button and start spinning until the job is done
                 const aiTrackButton = this.querySelector(".ai-track-button");
                 const aiSpinnerDiv = this.querySelector(".ai-spinner-div");
 
@@ -324,7 +351,7 @@ class SongTrack extends HTMLElement {
                 console.log(midiData);
 
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-                const { cerebras, blobUrl } = await aiTrack(midiData, csrfToken);
+                const { cerebras, blobUrl } = await aiTrack(midiData, aiInstructionText, csrfToken);
 
                 const midiTrack = document.createElement("song-track");
                 const timeStamp = `${Date.now()}`;

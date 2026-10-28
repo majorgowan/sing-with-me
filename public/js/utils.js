@@ -352,7 +352,7 @@ export const midifyTrack = async (midiData) => {
 };
 
 
-export const aiTrack = async (midiData, csrfToken) => {
+export const aiTrack = async (midiData, instruction, csrfToken) => {
     const midiString = Array.from(midiData.notes).map(
         (n, i) => `(${n}, ${midiData.onsets[i].toFixed(1)}, ${midiData.durations[i].toFixed(1)})`
     ).join(", ");
@@ -366,7 +366,10 @@ export const aiTrack = async (midiData, csrfToken) => {
             "Content-Type": "application/json",
             "X-CSRF-Token": csrfToken
         },
-        body: JSON.stringify({ midiData })
+        body: JSON.stringify({
+            midiData,
+            "instruction": instruction
+        })
     });
 
     if (!response.ok) {

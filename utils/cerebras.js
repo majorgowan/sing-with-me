@@ -8,7 +8,7 @@ const client = new Cerebras({
 async function askCerebras(content,
                            response_format = null,
                            temperature = 0.2,
-                           max_completion_tokens = 4096) {
+                           max_completion_tokens = 8192) {
     try {
         const response = await client.chat.completions.create({
             model: process.env.CEREBRAS_MODEL,
