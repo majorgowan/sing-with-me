@@ -6,6 +6,32 @@ import encode from "https://esm.sh/@audio/encode"
 // import Tone.js library
 import * as Tone from "https://esm.sh/tone@15.5.54";
 
+// load piano notes
+let pianoBuffers = null;
+
+async function ensurePianoBuffers() {
+    if (pianoBuffers) return pianoBuffers;
+    const baseUrl = "https://tonejs.github.io/audio/salamander/";
+    const urls = {
+        36: "C2.mp3", 38: "Ds2.mp3", 41: "Fs2.mp3", 45: "A2.mp3",
+        48: "C3.mp3", 50: "Ds3.mp3", 53: "Fs3.mp3", 57: "A3.mp3",
+        60: "C4.mp3", 62: "Ds4.mp3", 65: "Fs4.mp3", 69: "A4.mp3",
+        72: "C5.mp3", 74: "Ds5.mp3", 77: "Fs5.mp3", 81: "A5.mp3",
+        84: "C6.mp3", 86: "Ds6.mp3", 89: "Fs6.mp3", 93: "A6.mp3",
+        96: "C7.mp3", 98: "Ds7.mp3", 101: "Fs7.mp3", 105: "A7.mp3",
+        108: "C8.mp3",
+    };
+    const entries = await Promise.all(
+        Object.entries(urls).map(async ([midi, file]) => {
+            const res = await fetch(baseUrl + file);
+            const ab = await res.arrayBuffer();
+            return [Number(midi), await Tone.getContext().decodeAudioData(ab)];
+        })
+    );
+    pianoBuffers = Object.fromEntries(entries);
+    return pianoBuffers;
+}
+
 
 const MINPXPERSEC = 10;
 
@@ -310,21 +336,30 @@ export const editTrack = async (songTrack, start, end, operation) => {
 };
 
 
-async function midiToBlob(midiData) {
+async function midiToBlob(midiData, instrument) {
+
+    const buffers = instrument === "piano" ? await ensurePianoBuffers() : null;
 
     const totalDuration = midiData.onsets.at(-1) + 2;
 
     // use Tone.js to build audio buffer out of notes, onsets, durations
     const buffer = await Tone.Offline(({ transport }) => {
-        const synth = new Tone.Synth().toDestination();
+        let synthesizer;
+
+        if (instrument === "piano") {
+            synthesizer = new Tone.Sampler(buffers, null, null).set({ release: 1 }).toDestination();
+        } else {
+            synthesizer = new Tone.Synth().toDestination();
+        }
 
         midiData.notes.forEach((midi, i) => {
             transport.schedule((t) => {
-                synth.triggerAttackRelease(Tone.Frequency(midi, "midi").toNote(), midiData.durations[i], t);
+                synthesizer.triggerAttackRelease(Tone.Frequency(midi, "midi"), midiData.durations[i], t);
             }, midiData.onsets[i]);
             // console.log(midi, "yo!");
         });
         transport.start(0);
+
     }, totalDuration);
 
     // create audioBlob from the audioBuffer
@@ -345,7 +380,7 @@ async function midiToBlob(midiData) {
 
 export const midifyTrack = async (midiData) => {
 
-    const url = await midiToBlob(midiData);
+    const url = await midiToBlob(midiData, "piano");
 
     return url;
 
@@ -393,7 +428,7 @@ export const aiTrack = async (midiData, instruction, csrfToken) => {
 
     console.log(cerebrasMidiData);
 
-    const url = await midiToBlob(cerebrasMidiData);
+    const url = await midiToBlob(cerebrasMidiData, "piano");
 
     return {
         "blobUrl": url,
