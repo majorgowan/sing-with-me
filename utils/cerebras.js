@@ -57,11 +57,14 @@ export const analyze = async (instruction, midiData, verbose=false) => {
         
         Your response must use the provided JSON schema.
         
-        For midiSequence, use the same format of 
-        [integer midi note, floating point onset time in seconds, floating point duration in seconds].
+        For midiSequence, use the format of 
+        [integer midi note, floating point onset time in seconds, floating point duration in seconds, floating point volume].
         Each onset time MUST be greater than the previous onset time.
+        The volumes should be a value strictly between 0 and 1 inclusive.
         
         For chordProgression provide a chord progression that underlies your composition.
+        
+        Also specify the instrument to use: one of ["synth", "piano"] (with default "synth").
         
         Include an explanation of your composition in the description field.
     `;
@@ -79,13 +82,18 @@ export const analyze = async (instruction, midiData, verbose=false) => {
                     },
                     "midiSequence": {
                         "type": "array",
-                        "description": "Array of [integer, float, float] pairs, e.g. [[52, 13.4, 0.8], [48, 18.2, 0.8]]",
+                        "description": "Array of [integer, float, float, float] arrays, e.g. [[52, 13.4, 0.8, 1.0], [48, 18.2, 0.8, 0.9]]",
                         "items": {
                             "type": "array",
                             "items": { "type": "number" },
-                            "minItems": 3,
-                            "maxItems": 3
+                            "minItems": 4,
+                            "maxItems": 4
                         }
+                    },
+                    "instrument": {
+                        "type": "string",
+                        "description": "Name of instrument to use",
+                        "enum": ["synth", "piano"]
                     },
                     "chordProgression": {
                         "type": "array",

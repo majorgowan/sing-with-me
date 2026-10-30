@@ -133,6 +133,8 @@ class SongTrack extends HTMLElement {
     }
 
     getTrackData() {
+        // TODO: add in midiData if it exists (need to JSON.stringify() probably)
+        //       also on retrieving it in song.ejs, <%- JSON.stringify(track.midiData) %>
         return {
             "trackId": this.getAttribute("trackId"),
             "filename": this.getAttribute("filename"),
@@ -249,6 +251,33 @@ class SongTrack extends HTMLElement {
         }
     }
 
+    async midify() {
+        const audioBuffer = this.wavesurfer.getDecodedData();
+        const channelData = audioBuffer.getChannelData(0);
+        const myRhythm = await analyzeRhythm(channelData, (value) => {
+            console.log(`progress: ${value}`)
+        });
+        const myKey = await analyzeKey(channelData, (value) => {
+            console.log(`progress: ${value}`)
+        });
+        const myMelody = await analyzeMelody(channelData, (value) => {
+            console.log(`progress: ${value}`)
+        });
+
+        const midiData = {
+            ...myMelody,
+            "bpm": myRhythm.bpm,
+            "key": `${myKey.key} ${myKey.scale}`
+        }
+
+        console.log(midiData);
+
+        // save midiData!!
+        this.midiData = midiData;
+
+    }
+
+
     attachListeners() {
         let offsetX;
         // for moving the track
@@ -277,21 +306,9 @@ class SongTrack extends HTMLElement {
                 e.preventDefault();
                 console.log("midify track please!");
 
-                const audioBuffer = this.wavesurfer.getDecodedData();
-                const channelData = audioBuffer.getChannelData(0);
-                const myRhythm = await analyzeRhythm(channelData, (value) => {console.log(`progress: ${value}`)});
-                const myKey = await analyzeKey(channelData, (value) => {console.log(`progress: ${value}`)});
-                const myMelody = await analyzeMelody(channelData, (value) => {console.log(`progress: ${value}`)});
+                if (!this.midiData) await this.midify();
 
-                const midiData = {
-                    ...myMelody,
-                    "bpm": myRhythm.bpm,
-                    "key": `${myKey.key} ${myKey.scale}`
-                }
-
-                console.log(midiData);
-
-                const midiBlobUrl = await midifyTrack(midiData);
+                const midiBlobUrl = await midifyTrack(this.midiData);
                 const midiTrack = document.createElement("song-track");
                 const timeStamp = `${Date.now()}`;
                 const createdBy = this.getAttribute("created-by");
@@ -336,22 +353,10 @@ class SongTrack extends HTMLElement {
                 aiTrackButton.classList.add("hidden-button");
                 aiSpinnerDiv.classList.remove("hidden-div");
 
-                const audioBuffer = this.wavesurfer.getDecodedData();
-                const channelData = audioBuffer.getChannelData(0);
-                const myRhythm = await analyzeRhythm(channelData, (value) => {console.log(`progress: ${value}`)});
-                const myKey = await analyzeKey(channelData, (value) => {console.log(`progress: ${value}`)});
-                const myMelody = await analyzeMelody(channelData, (value) => {console.log(`progress: ${value}`)});
-
-                const midiData = {
-                    ...myMelody,
-                    "bpm": myRhythm.bpm,
-                    "key": `${myKey.key} ${myKey.scale}`
-                }
-
-                console.log(midiData);
+                if (!this.midiData) await this.midify();
 
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-                const { cerebras, blobUrl } = await aiTrack(midiData, aiInstructionText, csrfToken);
+                const { cerebras, blobUrl } = await aiTrack(this.midiData, aiInstructionText, csrfToken);
 
                 const midiTrack = document.createElement("song-track");
                 const timeStamp = `${Date.now()}`;

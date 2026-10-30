@@ -354,7 +354,7 @@ async function midiToBlob(midiData, instrument) {
 
         midiData.notes.forEach((midi, i) => {
             transport.schedule((t) => {
-                synthesizer.triggerAttackRelease(Tone.Frequency(midi, "midi"), midiData.durations[i], t);
+                synthesizer.triggerAttackRelease(Tone.Frequency(midi, "midi"), midiData.durations[i], t, midiData.volumes[i]);
             }, midiData.onsets[i]);
             // console.log(midi, "yo!");
         });
@@ -415,15 +415,19 @@ export const aiTrack = async (midiData, instruction, csrfToken) => {
 
     console.log(cerebrasResponse);
 
-    const notes = cerebrasResponse.cerebras.midiSequence.map(([note, onset, duration]) => note);
-    const onsets = cerebrasResponse.cerebras.midiSequence.map(([note, onset, duration]) => onset);
-    const durations = cerebrasResponse.cerebras.midiSequence.map(([note, onset, duration]) => duration);
+    const notes = cerebrasResponse.cerebras.midiSequence.map((noteData) => noteData[0]);
+    const onsets = cerebrasResponse.cerebras.midiSequence.map((noteData) => noteData[1]);
+    const durations = cerebrasResponse.cerebras.midiSequence.map((noteData) => noteData[2]);
+    const volumes = cerebrasResponse.cerebras.midiSequence.map((noteData) => {
+        return (noteData.length > 3 ? noteData[3] : 1.0);
+    });
 
     const cerebrasMidiData = {
         "notes": notes,
         "onsets": onsets.map((onset, i) => i > 0 ? Math.max(onset, onsets[i - 1] + 0.01) : onset),
         "durations": durations.map((duration, i) =>
-            i < durations.length - 1 ? Math.min(duration, onsets[i + 1] - onsets[i] - 0.01) : duration)
+            i < durations.length - 1 ? Math.min(duration, onsets[i + 1] - onsets[i] - 0.01) : duration),
+        "volumes": volumes.map((volume) => Math.min(1.0, Math.max(0.0, volume)))
     };
 
     console.log(cerebrasMidiData);
