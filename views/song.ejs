@@ -93,6 +93,9 @@
                         description="<%= track.description %>"
                         created-by="<%= track.createdBy %>"
                         delay="<%= track.delay ? track.delay : 0 %>"
+                        <% if (track.midiData != null) { %>
+                            midiData="<%= JSON.stringify(track.midiData) %>" %>
+                        <% } %>
                         saved="true">
             </song-track>
         <% } %>

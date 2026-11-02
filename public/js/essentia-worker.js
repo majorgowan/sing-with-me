@@ -43,10 +43,14 @@ self.onmessage = (e) => {
                 const cleanOnsets = Array.from(onsets).map((t, i) => durations[i] > 0.1 && notes[i] > 0 ? t : null).filter(t => t !== null);
                 const cleanDurations = Array.from(durations).map((d, i) => durations[i] > 0.1 && notes[i] > 0 ? d : null).filter(d => d !== null);
 
+                // TODO: implement volumes ("velocities")
+                const volumes = cleanDurations.map(d => 1.0);
+
                 result = {
                     "notes": cleanNotes,
                     "onsets": cleanOnsets,
-                    "durations": cleanDurations
+                    "durations": cleanDurations,
+                    "volumes": volumes
                 };
                 break;
             }

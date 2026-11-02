@@ -30,6 +30,9 @@ class SongTrack extends HTMLElement {
         this.selectStartPct = null;
         this.selectEndPct = null;
         this.delay = this.getAttribute("delay");
+        this.midiData = this.hasAttribute("midiData")
+            ? JSON.parse(this.getAttribute("midiData"))
+            : undefined;
     }
 
     disconnectedCallback() {
@@ -143,7 +146,8 @@ class SongTrack extends HTMLElement {
             "saved": this.getAttribute("saved"),
             "duration": this.duration,
             "delay": this.delay,
-            "createdBy": this.getAttribute("created-by")
+            "createdBy": this.getAttribute("created-by"),
+            "midiData": this.midiData
         };
     }
 
