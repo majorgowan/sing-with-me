@@ -101,6 +101,14 @@ class SongTrack extends HTMLElement {
                             <button class="swm-button play-track-button" type="button">Play</button>
                             <button class="swm-button stop-track-button" type="button">Stop</button>
                             <button class="swm-button midify-track-button" type="button">Midify</button>
+                            <div class="hidden-div instrument-popover popover">
+                                <button data-instrument="piano">🎹 Piano</button>
+                                <button data-instrument="violin">🎻 Violin</button>
+                                <button data-instrument="cello">🎻 Cello</button>
+                                <button data-instrument="flute">🪈 Flute</button>
+                                <button data-instrument="saxophone">🎷 Sax</button>
+                                <button data-instrument="synth">🎹 Synth</button>
+                            </div>
                             <button class="swm-button ai-track-button" type="button">AI</button>
                             <div class="spinner-div ai-spinner-div hidden-div"></div>
                         </div>
@@ -297,6 +305,8 @@ class SongTrack extends HTMLElement {
         // dots menu
         const dotsMenuWrap = this.querySelector(".dots-menu-wrap");
 
+        const instrumentPopover = this.querySelector(".instrument-popover")
+
         this.addEventListener("click", async (e) => {
             if (e.target.closest(".play-track-button")) {
                 e.preventDefault();
@@ -307,12 +317,21 @@ class SongTrack extends HTMLElement {
                 e.preventDefault();
                 this.stopTrack();
             } else if (e.target.closest(".midify-track-button")) {
+                console.log(instrumentPopover);
+                e.stopPropagation();
+                instrumentPopover.classList.remove("hidden-div");
+            } else if (e.target.closest(".instrument-popover")) {
                 e.preventDefault();
                 console.log("midify track please!");
 
+                instrumentPopover.classList.add("hidden-div");
+
+                const instrumentButton = e.target.closest("[data-instrument]");
+                const instrument = instrumentButton.dataset.instrument;
+
                 if (!this.midiData) await this.midify();
 
-                const midiBlobUrl = await midifyTrack(this.midiData);
+                const midiBlobUrl = await midifyTrack(this.midiData, instrument);
                 const midiTrack = document.createElement("song-track");
                 const timeStamp = `${Date.now()}`;
                 const createdBy = this.getAttribute("created-by");
@@ -320,7 +339,7 @@ class SongTrack extends HTMLElement {
                 midiTrack.setAttribute("filename", this.getAttribute("filename") + `-midi-${timeStamp}`);
                 // create a url for the audio blob
                 midiTrack.setAttribute("blobUrl", midiBlobUrl);
-                midiTrack.setAttribute("title", this.getAttribute("title") + " (midified)");
+                midiTrack.setAttribute("title", this.getAttribute("title") + ` (midified ${instrument})`);
                 midiTrack.setAttribute("description", `Midified version of ${this.getAttribute("title")}`);
                 midiTrack.setAttribute("created-by", createdBy);
                 midiTrack.setAttribute("delay", this.delay);

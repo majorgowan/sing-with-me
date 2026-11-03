@@ -6,31 +6,111 @@ import encode from "https://esm.sh/@audio/encode"
 // import Tone.js library
 import * as Tone from "https://esm.sh/tone@15.5.54";
 
-// load piano notes
-let pianoBuffers = null;
+// ─── Sample registry ───────────────────────────────────────────────
+const SAMPLE_SOURCES = {
+    piano: {
+        baseUrl: "https://tonejs.github.io/audio/salamander/",
+        notes: {
+            36: "C2.mp3", 38: "Ds2.mp3", 41: "Fs2.mp3", 45: "A2.mp3",
+            48: "C3.mp3", 50: "Ds3.mp3", 53: "Fs3.mp3", 57: "A3.mp3",
+            60: "C4.mp3", 62: "Ds4.mp3", 65: "Fs4.mp3", 69: "A4.mp3",
+            72: "C5.mp3", 74: "Ds5.mp3", 77: "Fs5.mp3", 81: "A5.mp3",
+            84: "C6.mp3", 86: "Ds6.mp3", 89: "Fs6.mp3", 93: "A6.mp3",
+            96: "C7.mp3", 98: "Ds7.mp3", 101: "Fs7.mp3", 105: "A7.mp3",
+            108: "C8.mp3",
+        },
+        release: 1,
+    },
+    violin: {
+        baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/violin/",
+        notes: {
+            55: "G3.mp3",  57: "A3.mp3", 60: "C4.mp3",  64: "E4.mp3",
+            67: "G4.mp3",  69: "A4.mp3", 72: "C5.mp3",  76: "E5.mp3",
+            79: "G5.mp3",  81: "A5.mp3", 84: "C6.mp3",  88: "E6.mp3",
+            91: "G6.mp3",  93: "A6.mp3", 96: "C7.mp3",
+        },
+        release: 0.8,
+    },
+    cello: {
+        baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/cello/",
+        notes: {
+            36: "C2.mp3", 40: "E2.mp3", 43: "G2.mp3", 48: "B2.mp3",
+            51: "Ds3.mp3", 54: "Fs3.mp3", 58: "A3.mp3", 60: "C4.mp3",
+            64: "E4.mp3", 67: "G4.mp3", 71: "B4.mp3",
+        },
+        release: 0.6,
+    },
+    saxophone: {
+        baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/saxophone/",
+        notes: {
+            // might be an octave shift
+            49: "Cs3.mp3", 52: "E3.mp3", 55: "G3.mp3", 58: "As3.mp3",
+            60: "C4.mp3", 64: "E4.mp3", 67: "G4.mp3", 70: "As4.mp3",
+            72: "C5.mp3", 76: "E5.mp3", 79: "G5.mp3", 81: "A5.mp3",
+        },
+        release: 0.5
+    },
+    flute: {
+        baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/flute/",
+        notes: {
+            72:  "C4.mp3",   // sounds as C5
+            76:  "E4.mp3",   // sounds as E5
+            81:  "A4.mp3",   // sounds as A5  (there's an octave shift in the flute data)
+            84:  "C5.mp3",   // sounds as C6
+            88:  "E5.mp3",   // sounds as E6
+            93:  "A5.mp3",   // sounds as A6
+            96:  "C6.mp3",   // sounds as C7
+            100: "E6.mp3",   // sounds as E7
+            105: "A6.mp3",   // sounds as A7
+        },
+        release: 0.4,
+    },
+    // add more instruments here...
+};
 
-async function ensurePianoBuffers() {
-    if (pianoBuffers) return pianoBuffers;
-    const baseUrl = "https://tonejs.github.io/audio/salamander/";
-    const urls = {
-        36: "C2.mp3", 38: "Ds2.mp3", 41: "Fs2.mp3", 45: "A2.mp3",
-        48: "C3.mp3", 50: "Ds3.mp3", 53: "Fs3.mp3", 57: "A3.mp3",
-        60: "C4.mp3", 62: "Ds4.mp3", 65: "Fs4.mp3", 69: "A4.mp3",
-        72: "C5.mp3", 74: "Ds5.mp3", 77: "Fs5.mp3", 81: "A5.mp3",
-        84: "C6.mp3", 86: "Ds6.mp3", 89: "Fs6.mp3", 93: "A6.mp3",
-        96: "C7.mp3", 98: "Ds7.mp3", 101: "Fs7.mp3", 105: "A7.mp3",
-        108: "C8.mp3",
-    };
+// ─── Buffer cache ─────────────────────────────────────────────────
+const bufferCache = {};
+
+async function ensureBuffers(instrument) {
+    if (bufferCache[instrument]) return bufferCache[instrument];
+
+    const { baseUrl, notes } = SAMPLE_SOURCES[instrument];
     const entries = await Promise.all(
-        Object.entries(urls).map(async ([midi, file]) => {
+        Object.entries(notes).map(async ([midi, file]) => {
             const res = await fetch(baseUrl + file);
             const ab = await res.arrayBuffer();
             return [Number(midi), await Tone.getContext().decodeAudioData(ab)];
         })
     );
-    pianoBuffers = Object.fromEntries(entries);
-    return pianoBuffers;
+
+    bufferCache[instrument] = Object.fromEntries(entries);
+    return bufferCache[instrument];
 }
+
+
+// let pianoBuffers = null;
+// async function ensurePianoBuffers() {
+//     if (pianoBuffers) return pianoBuffers;
+//     const baseUrl = "https://tonejs.github.io/audio/salamander/";
+//     const urls = {
+//         36: "C2.mp3", 38: "Ds2.mp3", 41: "Fs2.mp3", 45: "A2.mp3",
+//         48: "C3.mp3", 50: "Ds3.mp3", 53: "Fs3.mp3", 57: "A3.mp3",
+//         60: "C4.mp3", 62: "Ds4.mp3", 65: "Fs4.mp3", 69: "A4.mp3",
+//         72: "C5.mp3", 74: "Ds5.mp3", 77: "Fs5.mp3", 81: "A5.mp3",
+//         84: "C6.mp3", 86: "Ds6.mp3", 89: "Fs6.mp3", 93: "A6.mp3",
+//         96: "C7.mp3", 98: "Ds7.mp3", 101: "Fs7.mp3", 105: "A7.mp3",
+//         108: "C8.mp3",
+//     };
+//     const entries = await Promise.all(
+//         Object.entries(urls).map(async ([midi, file]) => {
+//             const res = await fetch(baseUrl + file);
+//             const ab = await res.arrayBuffer();
+//             return [Number(midi), await Tone.getContext().decodeAudioData(ab)];
+//         })
+//     );
+//     pianoBuffers = Object.fromEntries(entries);
+//     return pianoBuffers;
+// }
 
 
 const MINPXPERSEC = 10;
@@ -338,26 +418,36 @@ export const editTrack = async (songTrack, start, end, operation) => {
 
 async function midiToBlob(midiData, instrument) {
 
-    const buffers = instrument === "piano" ? await ensurePianoBuffers() : null;
+    // const buffers = instrument === "piano" ? await ensurePianoBuffers() : null;
+    const buffers = (instrument !== "synth")
+        ? await ensureBuffers(instrument)
+        : null;
+
+    const release = SAMPLE_SOURCES[instrument]?.release ?? 1;
 
     const totalDuration = midiData.onsets.at(-1) + 2;
 
     // use Tone.js to build audio buffer out of notes, onsets, durations
     const buffer = await Tone.Offline(({ transport }) => {
-        let synthesizer;
 
-        if (instrument === "piano") {
-            synthesizer = new Tone.Sampler(buffers, null, null).set({ release: 1 }).toDestination();
-        } else {
-            synthesizer = new Tone.Synth().toDestination();
-        }
+        const synth = (instrument === "synth")
+            ? new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "fatsawtooth" },
+                envelope: { attack: 0.01, decay: 0.2, sustain: 0.5, release: 1 },
+            }).toDestination()
+            : new Tone.Sampler(buffers, null, null).set({ release }).toDestination();
 
         midiData.notes.forEach((midi, i) => {
             transport.schedule((t) => {
-                synthesizer.triggerAttackRelease(Tone.Frequency(midi, "midi"), midiData.durations[i], t, midiData.volumes[i]);
+                synth.triggerAttackRelease(
+                    Tone.Frequency(midi, "midi"),
+                    midiData.durations[i],
+                    t,
+                    midiData.volumes[i]
+                );
             }, midiData.onsets[i]);
-            // console.log(midi, "yo!");
         });
+
         transport.start(0);
 
     }, totalDuration);
@@ -378,9 +468,9 @@ async function midiToBlob(midiData, instrument) {
 }
 
 
-export const midifyTrack = async (midiData) => {
+export const midifyTrack = async (midiData, instrument) => {
 
-    const url = await midiToBlob(midiData, "piano");
+    const url = await midiToBlob(midiData, instrument);
 
     return url;
 
@@ -394,7 +484,6 @@ export const aiTrack = async (midiData, instruction, csrfToken) => {
 
     console.log(midiString);
 
-    // TODO: have server call GPT to compose harmony
     const response = await fetch("/api/compose", {
         method: "POST",
         headers: {
