@@ -511,6 +511,7 @@ export const aiTrack = async (midiData, instruction, csrfToken) => {
         return (noteData.length > 3 ? noteData[3] : 1.0);
     });
 
+    // TODO: that duration restriction is unnecessary!!!  All that matters is the onsets are distinct and in order.
     const cerebrasMidiData = {
         "notes": notes,
         "onsets": onsets.map((onset, i) => i > 0 ? Math.max(onset, onsets[i - 1] + 0.01) : onset),

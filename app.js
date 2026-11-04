@@ -22,6 +22,8 @@ app.use(cookieParser(process.env.COOKIE_SECRET));
 
 // database instance for session storage
 const { client } = await connectToDatabase(process.env.DB_NAME);
+await client.db(process.env.DB_NAME).command({ ping: 1 });
+console.log('Mongo connected: true');
 
 // Use session-based authentication
 if (process.env.NODE_ENV === "production" || process.env.USE_PROXY === "true") {

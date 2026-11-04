@@ -317,9 +317,8 @@ class SongTrack extends HTMLElement {
                 e.preventDefault();
                 this.stopTrack();
             } else if (e.target.closest(".midify-track-button")) {
-                console.log(instrumentPopover);
                 e.stopPropagation();
-                instrumentPopover.classList.remove("hidden-div");
+                instrumentPopover.classList.toggle("hidden-div");
             } else if (e.target.closest(".instrument-popover")) {
                 e.preventDefault();
                 console.log("midify track please!");

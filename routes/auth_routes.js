@@ -35,6 +35,7 @@ router.post("/login", async (req, res) => {
     const user = await dbInstance.collection("users").findOne({ "username": username });
     console.log(user);
     if (!user) {
+        console.log("USER NOT RECOGNIZED, NOT PROCEEDING . . .");
         res.render("authenticate",
             {
                 "csrfToken": req.csrfToken(),
@@ -43,6 +44,7 @@ router.post("/login", async (req, res) => {
     } else {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
+            console.log("USER RECOGNIZED BUT WRONG PASSWORD, NOT PROCEEDING . . .");
             res.render("authenticate",
                 {
                     "csrfToken": req.csrfToken(),
@@ -50,6 +52,7 @@ router.post("/login", async (req, res) => {
                     "message": "password does not match"
                 });
         } else {
+            console.log("USER RECOGNIZED, PROCEEDING . . .");
             // user logged in, create session
             req.session.username = user.username;
 
