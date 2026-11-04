@@ -13,13 +13,6 @@ router.get("/", async (req, res) => {
 });
 
 
-router.post("/login", async (req, res) => {
-    const { username } = req.body;
-    req.session.username = username;
-    return res.redirect("/songlist");
-});
-
-
 router.get("/songlist", async (req, res) => {
     if (!req.session.username) {
         return res.redirect("/");
