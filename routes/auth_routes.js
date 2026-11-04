@@ -56,6 +56,8 @@ router.post("/login", async (req, res) => {
             // user logged in, create session
             req.session.username = user.username;
 
+            console.log('Session before save:', JSON.stringify(req.session));
+
             // make sure session saves before redirect
             req.session.save((err) => {
                 if (err) console.error(err);
