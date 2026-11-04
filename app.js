@@ -50,6 +50,13 @@ app.use(session({
     })
 }));
 
+app.use((req, res, next) => {
+    res.on('finish', () => {
+        console.log('FINAL Set-Cookie:', res.getHeader('Set-Cookie'));
+    });
+    next();
+});
+
 // Parse JSON bodies
 app.use(express.json());
 
