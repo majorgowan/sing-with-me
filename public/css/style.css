@@ -323,6 +323,7 @@ song-track, new-track {
 
 /* grabber button for moving tracks */
 .move-grab-button {
+    cursor: default;
     position: absolute;
     background: none;
     color: royalblue;

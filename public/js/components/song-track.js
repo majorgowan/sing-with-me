@@ -222,6 +222,10 @@ class SongTrack extends HTMLElement {
         }
     }
 
+    setMuted(value) {
+        this.querySelector(".mute-checkbox").checked = value;
+    }
+
     isMuted() {
         console.log(this.getAttribute("title") + " muted?: " + this.querySelector(".mute-checkbox").checked);
         return this.querySelector(".mute-checkbox").checked;
@@ -240,8 +244,14 @@ class SongTrack extends HTMLElement {
     }
 
     stopTrack() {
-        if (this.wavesurfer && this.wavesurfer.isPlaying()) {
+        if (this.wavesurfer) {
             this.wavesurfer.stop();
+        }
+    }
+
+    pauseTrack() {
+        if (this.wavesurfer && this.wavesurfer.isPlaying()) {
+            this.wavesurfer.pause();
         }
     }
 

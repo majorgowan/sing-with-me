@@ -44,6 +44,29 @@ class Song extends HTMLElement {
                 this.tracks.forEach(songTrack => {
                     songTrack.playTrack(songTrack.volumeFactor, true);
                 });
+            } else if (e.target.closest(".stop-all-button")) {
+                e.preventDefault();
+                this.tracks.forEach(songTrack => {
+                    songTrack.stopTrack();
+                });
+            } else if (e.target.closest(".pause-all-button")) {
+                e.preventDefault();
+                this.tracks.forEach(songTrack => {
+                    songTrack.pauseTrack();
+                });
+            } else if (e.target.closest(".mute-all-button")) {
+                const muteAllButton = this.querySelector(".mute-all-button");
+                if (muteAllButton.textContent === "Mute all") {
+                    muteAllButton.textContent = "Unmute all";
+                    for (const track of this.tracks) {
+                        track.setMuted(true);
+                    }
+                } else {
+                    muteAllButton.textContent = "Mute all";
+                    for (const track of this.tracks) {
+                        track.setMuted(false);
+                    }
+                }
             } else if (e.target.closest(".add-new-track-button")) {
                 e.preventDefault();
                 console.log(e.target.dataset.username);
@@ -95,6 +118,7 @@ class Song extends HTMLElement {
                 for (const track of this.tracks) {
                     track.seek(globalTime);
                 }
+                this.syncTimeline(globalTime, true);
             }
         });
     }
@@ -155,10 +179,11 @@ class Song extends HTMLElement {
         console.log(timelineItems);
     }
 
-    syncTimeline(t) {
+    syncTimeline(t, force) {
         // update the timeline
+        // force used to set timeline position no matter what (like on a click event)
         // TODO: this logic isn't robust if the "leading" track ends before the others, the timeline stops syncing
-        if (this.timeFactor && (t < 0.1 || t > this.globalTime)) {
+        if (this.timeFactor && (t < 0.1 || t > this.globalTime) || force) {
             // console.log(t);
             const timelineTimer = this.querySelector(".timeline-timer");
             timelineTimer.style.width = (this.leftTimelineMargin + this.timeFactor * t) + "px";
