@@ -133,7 +133,7 @@ class Song extends HTMLElement {
         const tickInterval = 10;
         const timelineItems = this.querySelector(".timeline-items");
         const totalDuration = Array.from(tracks).reduce((max, track0) => {
-            return Math.max(max, parseFloat(track0.delay) + parseFloat(track0.duration));
+            return Math.max(max, parseFloat(track0.duration));
         }, 0);
         const nItems = Math.floor(totalDuration / tickInterval) + 1;
         console.log("total duration: ", totalDuration, "nItems: ", nItems);

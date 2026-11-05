@@ -153,8 +153,7 @@ export const makeWaveSurfer = (songTrack, blobUrl) => {
     });
 
     wavesurfer.on("timeupdate", (t) => {
-        const delay = songTrack.delay ? songTrack.delay : 0.0;
-        songTrack.closest("song-div").syncTimeline(t + delay);
+        songTrack.closest("song-div").syncTimeline(t);
     });
 
     return wavesurfer;
@@ -205,8 +204,7 @@ export const makeWaveRecorder = async (newTrack, recorder) => {
     });
 
     newRecorder.on("timeupdate", (t) => {
-        const delay = newTrack.delay ? newTrack.delay : 0.0;
-        songTrack.closest("song-div").syncTimeline(t + delay);
+        songTrack.closest("song-div").syncTimeline(t);
     });
 
     return newRecorder;

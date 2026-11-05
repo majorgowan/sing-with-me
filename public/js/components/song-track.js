@@ -29,7 +29,6 @@ class SongTrack extends HTMLElement {
         this.attachListeners();
         this.selectStartPct = null;
         this.selectEndPct = null;
-        this.delay = this.getAttribute("delay");
         this.midiData = this.hasAttribute("midiData")
             ? JSON.parse(this.getAttribute("midiData"))
             : undefined;
@@ -38,7 +37,6 @@ class SongTrack extends HTMLElement {
     disconnectedCallback() {
         clearInterval(this._countDown);
         clearTimeout(this._confirmTimeout);
-        clearTimeout(this._delayTimeout);
     }
 
     render() {
@@ -66,6 +64,8 @@ class SongTrack extends HTMLElement {
                     <button class="swm-button loop-button">Loop</button>
                 </div>
                 <div class="track-detail">
+                    <button class="move-grab-button">&parallel;</button>
+                    <input type="range" min="0" max="1" step="0.1" value="1" class="volume-slider">
                     <div class="track-detail-head-div">
                         <div>
                             <div>
@@ -96,7 +96,6 @@ class SongTrack extends HTMLElement {
                         Mute
                     </label>
                     <div class="track-buttons-div">
-                        <input type="range" min="0" max="1" step="0.1" value="1" class="volume-slider">
                         <div class="track-detail-buttons">
                             <button class="swm-button play-track-button" type="button">Play</button>
                             <button class="swm-button stop-track-button" type="button">Stop</button>
@@ -153,7 +152,6 @@ class SongTrack extends HTMLElement {
             "description": this.getAttribute("description"),
             "saved": this.getAttribute("saved"),
             "duration": this.duration,
-            "delay": this.delay,
             "createdBy": this.getAttribute("created-by"),
             "midiData": this.midiData
         };
@@ -177,17 +175,12 @@ class SongTrack extends HTMLElement {
     }
 
     seek(time) {
-        this.wavesurfer.setTime(time - this.delay);
+        this.wavesurfer.setTime(time);
     }
 
     setDuration(duration) {
         this.duration = duration;
         this.querySelector(".waveform-track").style.width = (40 * duration) + "px";
-        // set left position if there is a delay
-        if (this.delay) {
-            const waveformTrack = this.querySelector('.waveform-track');
-            this.style.left = this.delay / this.duration * parseFloat(waveformTrack.style.width) + "px";
-        }
     }
 
     getTimeFactor() {
@@ -242,18 +235,7 @@ class SongTrack extends HTMLElement {
             if (this.selectStartPct && this.selectEndPct) {
                 this.wavesurfer.play(this.selectStartPct * this.duration, this.selectEndPct * this.duration);
             }
-            if (withDelay && this.delay) {
-                // TODO: this should only be used when playing from the beginning
-                //       if user has seeked to a spot the delay is already done
-                //       Maybe just check if globalTime is 0 before playing or have
-                //       a "isSeeked" flag.
-                console.log(this.delay);
-                this._delayTimeout = setTimeout(() => {
-                    this.wavesurfer.play();
-                }, this.delay * 1000);
-            } else {
-                this.wavesurfer.play();
-            }
+            this.wavesurfer.play();
         }
     }
 
@@ -341,7 +323,6 @@ class SongTrack extends HTMLElement {
                 midiTrack.setAttribute("title", this.getAttribute("title") + ` (midified ${instrument})`);
                 midiTrack.setAttribute("description", `Midified version of ${this.getAttribute("title")}`);
                 midiTrack.setAttribute("created-by", createdBy);
-                midiTrack.setAttribute("delay", this.delay);
                 midiTrack.setAttribute("saved", "false");
                 // add the dupTrack below this track
                 console.log(midiTrack);
@@ -390,7 +371,6 @@ class SongTrack extends HTMLElement {
                 midiTrack.setAttribute("title", this.getAttribute("title") + " (ai accompaniment)");
                 midiTrack.setAttribute("description", cerebras.description);
                 midiTrack.setAttribute("created-by", createdBy);
-                midiTrack.setAttribute("delay", this.delay);
                 midiTrack.setAttribute("saved", "false");
                 // add the dupTrack below this track
                 console.log(midiTrack);
@@ -416,7 +396,6 @@ class SongTrack extends HTMLElement {
                 dupTrack.setAttribute("title", this.getAttribute("title") + " (copy)");
                 dupTrack.setAttribute("description", this.getAttribute("description"));
                 dupTrack.setAttribute("created-by", createdBy);
-                dupTrack.setAttribute("delay", this.delay);
                 dupTrack.setAttribute("saved", "false");
                 // add the dupTrack below this track
                 console.log(dupTrack);
@@ -457,14 +436,7 @@ class SongTrack extends HTMLElement {
             }
         });
         this.addEventListener("pointerdown", (e) => {
-            if (e.target.closest(".track-detail")) {
-                // e.preventDefault();
-                dragging = true;
-                this.style.cursor = "grabbing";
-                console.log("I've been grabbed yo!!!!!");
-                offsetX = e.clientX - this.offsetLeft;
-                console.log(offsetX, e.clientX, this.offsetLeft, this.style.left);
-            } else if (e.target.closest(".waveform-track") || e.target.closest(".waveform-range-select")) {
+            if (e.target.closest(".waveform-track") || e.target.closest(".waveform-range-select")) {
                 e.preventDefault();
                 // set moved to false until pointer moves (i.e. not just a click)
                 moved = false;
@@ -475,11 +447,7 @@ class SongTrack extends HTMLElement {
             }
         });
         this.addEventListener("pointerup", (e) => {
-            if (e.target.closest(".track-detail")) {
-                dragging = false;
-                this.style.cursor = null;
-                console.log("It's okay she let go!!!!!", e.clientX - offsetX);
-            } else if (e.target.closest(".waveform-track") || e.target.closest(".waveform-range-select")) {
+            if (e.target.closest(".waveform-track") || e.target.closest(".waveform-range-select")) {
                 e.preventDefault();
                 selecting = false;
                 if (moved) {
@@ -526,16 +494,6 @@ class SongTrack extends HTMLElement {
                     // hide edit div:
                     this.toggleEditDiv("hide");
                 }
-            } else if (e.target.closest(".track-detail")) {
-                if (!dragging) return;
-                let x = Math.max(0, e.clientX - offsetX);
-                this.style.left = x + "px";
-                // TODO: compute and set width of container (<song-div> or maybe even <body>!!)
-                //       reset to default width if the widestWidth gets less
-                const widestWidth = this.closest("song-div").widestTrackWidth;
-                this.delay = parseFloat(this.style.left) / parseFloat(waveformTrack.style.width) * this.duration;
-                this.closest("body").style.width = widestWidth + 100 + "px";
-                this.closest("song-div").updateTimeline();
             }
         });
         this.addEventListener("change", (e) => {
@@ -554,7 +512,6 @@ class NewTrack extends SongTrack {
 
     connectedCallback() {
         super.connectedCallback();
-        this.delay = 0;
     }
 
     render() {

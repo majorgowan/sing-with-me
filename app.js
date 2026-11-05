@@ -50,12 +50,13 @@ app.use(session({
     })
 }));
 
-app.use((req, res, next) => {
-    res.on('finish', () => {
-        console.log('FINAL Set-Cookie:', res.getHeader('Set-Cookie'));
-    });
-    next();
-});
+// DEBUGGING MIDDLEWARE TOOL: checking that cookies being set by server
+// app.use((req, res, next) => {
+//     res.on('finish', () => {
+//         console.log('FINAL Set-Cookie:', res.getHeader('Set-Cookie'));
+//     });
+//     next();
+// });
 
 // Parse JSON bodies
 app.use(express.json());
