@@ -152,7 +152,7 @@ class Song extends HTMLElement {
         timeLine.classList.remove("hidden-div");
         this.timeFactor = tracks[0].getTimeFactor();
         this.leftTimelineMargin = parseFloat(getComputedStyle(tracks[0]).marginLeft);
-        console.log(`time factor: ${this.timeFactor} pixels per second`);
+        // console.log(`time factor: ${this.timeFactor} pixels per second`);
 
         const tickInterval = 10;
         const timelineItems = this.querySelector(".timeline-items");
@@ -160,7 +160,7 @@ class Song extends HTMLElement {
             return Math.max(max, parseFloat(track0.duration));
         }, 0);
         const nItems = Math.floor(totalDuration / tickInterval) + 1;
-        console.log("total duration: ", totalDuration, "nItems: ", nItems);
+        // console.log("total duration: ", totalDuration, "nItems: ", nItems);
         timelineItems.innerHTML = `
             <div style="display: inline-block; width: 10px;">
             </div>
@@ -168,7 +168,7 @@ class Song extends HTMLElement {
         for (let item = 0; item < nItems; item++) {
             const width = (item === nItems - 1) ? "60px" : `${tickInterval * this.timeFactor}px`;
             const timeString = (item === 0) ? "0" : `${item * tickInterval} s`;
-            console.log(width);
+            // console.log(width);
             timelineItems.innerHTML += `
                 <div class="timeline-item" style="width: ${width};">
                     <span class="timeline-content">&nbsp;${timeString}</span>
@@ -176,7 +176,7 @@ class Song extends HTMLElement {
             `
         }
         this.closest("body").style.width = this.widestTrackWidth + 50 + "px";
-        console.log(timelineItems);
+        // console.log(timelineItems);
     }
 
     syncTimeline(t, force) {

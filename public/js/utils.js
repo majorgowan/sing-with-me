@@ -150,6 +150,11 @@ export const makeWaveSurfer = (songTrack, blobUrl) => {
         const container =  songTrack.querySelector(".waveform-track");
         container.style.width = `${wavesurfer.getDuration() * MINPXPERSEC * 1.01}px`;
         songTrack.closest("song-div").updateTimeline();
+        // reveal control buttons
+        const trackDetailButtons = songTrack.querySelector(".track-detail-buttons");
+        trackDetailButtons.classList.remove("hidden-div");
+        const muteLabel = songTrack.querySelector(".mute-checkbox-label");
+        muteLabel.classList.remove("hidden-label");
     });
 
     wavesurfer.on("timeupdate", (t) => {
@@ -193,19 +198,27 @@ export const makeWaveRecorder = async (newTrack, recorder) => {
         const recButton = newTrack.querySelector(".save-recording-button");
         if (recButton) recButton.disabled = false;
         newTrack.recordedBlob = blob;
+
+        const trackDetailButtons = newTrack.querySelector(".track-detail-buttons");
+        trackDetailButtons.classList.remove("hidden-div");
+        const muteLabel = newTrack.querySelector(".mute-checkbox-label");
+        muteLabel.classList.remove("hidden-label");
+
+        const recordControlsDiv = newTrack.querySelector(".record-controls-div");
+        recordControlsDiv.classList.add("hidden-div");
     });
 
     newRecorder.on("ready", () => {
         newTrack.setDuration(newRecorder.getDuration());
         // set width of containing div proportional to duration
-        const container =  songTrack.querySelector(".waveform-track");
-        container.style.width = `${wavesurfer.getDuration() * MINPXPERSEC * 1.01}px`;
+        const container =  newTrack.querySelector(".waveform-track");
+        container.style.width = `${newRecorder.getDuration() * MINPXPERSEC * 1.01}px`;
         newTrack.closest("song-div").updateTimeline();
     });
 
-    newRecorder.on("timeupdate", (t) => {
-        songTrack.closest("song-div").syncTimeline(t);
-    });
+    // newRecorder.on("timeupdate", (t) => {
+    //     songTrack.closest("song-div").syncTimeline(t);
+    // });
 
     return newRecorder;
 };

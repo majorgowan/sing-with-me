@@ -69,7 +69,7 @@ class SongTrack extends HTMLElement {
                     <div class="track-detail-head-div">
                         <div>
                             <div>
-                                <input class="title-input" type="text" value="${title}" ${this.setReadOnly()}>
+                                <input class="title-input" type="text" value="${title}" ${this.setReadOnly(isOwner)}>
                             </div>
                             <div>
                                 By: ${createdBy}
@@ -91,12 +91,12 @@ class SongTrack extends HTMLElement {
                             <button class="confirm-delete-track-button hidden-menu-button">Confirm</button>
                         </div> 
                     </div>
-                    <label class="swm-checkbox mute-checkbox-label">
+                    <label class="swm-checkbox mute-checkbox-label hidden-label">
                         <input type="checkbox" class="mute-checkbox">
                         Mute
                     </label>
                     <div class="track-buttons-div">
-                        <div class="track-detail-buttons">
+                        <div class="track-detail-buttons hidden-div">
                             <button class="swm-button play-track-button" type="button">Play</button>
                             <button class="swm-button stop-track-button" type="button">Stop</button>
                             <button class="swm-button midify-track-button" type="button">Midify</button>
@@ -157,9 +157,9 @@ class SongTrack extends HTMLElement {
         };
     }
 
-    setReadOnly() {
+    setReadOnly(dontDoIt) {
         // saved track can't be edited
-        return "readonly";
+        return dontDoIt ? "" : "readonly";
     }
 
     hasAudio() {
@@ -529,11 +529,11 @@ class NewTrack extends SongTrack {
         // Add the extra bits a new track needs
         const trackButtonsDiv = this.querySelector(".track-buttons-div");
         trackButtonsDiv.innerHTML += `
-            <div>
+            <div class="record-controls-div">
                 <div class="count-down-div hidden-div"></div>
                 <div>
                     <button class="swm-button record-button" type="button">Record</button>
-                    <button class="swm-button save-recording-button" type="button" disabled>Save</button>
+                    <button class="swm-button record-stop-button" type="button" disabled>Stop</button>
                 </div>
             </div>
         `;
@@ -581,6 +581,9 @@ class NewTrack extends SongTrack {
                     sampleRate: 16000
                 };
 
+                const stopButton = this.querySelector(".record-stop-button");
+                if (stopButton) stopButton.disabled = false;
+
                 // start count down
                 let countDownValue = Number(timeSignatureSelect.value);
                 const countDownDiv = this.querySelector(".count-down-div");
@@ -604,7 +607,9 @@ class NewTrack extends SongTrack {
                         this.setModified();
                     }
                 }, tempo);
-            } else if (e.target.closest(".stop-track-button")) {
+            } else if (e.target.closest(".record-stop-button")) {
+                console.log("STOPPING RECORDING!!!!");
+                this.stopTrack();
                 if (playOtherTracks) {
                     parentSong.tracks.forEach((track) => {
                         if (track !== this) {
@@ -612,9 +617,6 @@ class NewTrack extends SongTrack {
                         }
                     });
                 }
-            } else if (e.target.closest(".save-recording-button")) {
-                await uploadAudioToS3(this.recordedBlob, this.getAttribute("filename"));
-                this.setAttribute("saved", "true");
             }
 
         });

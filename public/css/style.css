@@ -285,6 +285,9 @@ song-track, new-track {
 .hidden-button {
     display: none;
 }
+.hidden-label {
+    display: none;
+}
 .invisible-button {
     visibility: hidden;
 }
@@ -384,10 +387,11 @@ song-track, new-track {
 /* timeline */
 .timeline {
     position: sticky;
+    margin-top: 15px;
     bottom: 0;
     z-index: 10;
     border-top: 0.5px solid saddlebrown;
-    background-color: rgba(250, 150, 150, 0.2);
+    background-color: rgba(250, 150, 150, 0.3);
     height: 60px;
     min-width: 100%;
     display: flex;
