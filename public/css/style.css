@@ -2,7 +2,7 @@ body {
     background-color: #b3d4ff;
     color: #222271;
     overflow-x: auto;
-    margin-bottom: 0;
+    margin-bottom: 75px;
     margin-left: 0;
     margin-right: 0;
 }
@@ -386,7 +386,7 @@ song-track, new-track {
 
 /* timeline */
 .timeline {
-    position: sticky;
+    position: fixed;
     margin-top: 15px;
     bottom: 0;
     z-index: 10;
@@ -397,6 +397,10 @@ song-track, new-track {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
+}
+.timeline > * {
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 .timeline-item {
     display: inline-block;
