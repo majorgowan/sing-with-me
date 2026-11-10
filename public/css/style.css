@@ -49,13 +49,15 @@ header {
 }
 #song-list-div {
     overflow-x: auto; /* horizontal scroll on small screens */
+    padding-left: 30px;
+    padding-right: 30px;
     margin: 1rem 0;
 }
 #song-list-div table {
     width: 100%;
     border-collapse: collapse; /* merges adjacent borders into one clean line */
 }
-#song-list-div table td, song-list-div table th {
+#song-list-div table td, #song-list-div table th {
     padding: 0.75em 1em; /* vertical, then horizontal breathing room */
     text-align: left;
     border-bottom: 1px solid #ddd; /* subtle row separator */
@@ -69,7 +71,6 @@ header {
 }
 
 .song-head {
-    max-width: 70%;
     width: 600px;
     background-color: aliceblue;
     padding: 15px;
@@ -247,6 +248,9 @@ header {
     border: 1.5px solid saddlebrown;
     background-color: blanchedalmond;
     border-radius: 12px;
+    -webkit-touch-callout: none;
+    user-select: none;
+    touch-action: none;
 }
 .waveform-wrapper {
     position: relative;

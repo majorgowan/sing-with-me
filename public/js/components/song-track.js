@@ -287,6 +287,7 @@ class SongTrack extends HTMLElement {
         // for moving the track
         let dragging = false;
         // for selecting a range in the track
+        let touchTimer = null;
         let selecting = false;
         // flag to distinguish click from range set
         let moved = false;
@@ -298,6 +299,13 @@ class SongTrack extends HTMLElement {
         const dotsMenuWrap = this.querySelector(".dots-menu-wrap");
 
         const instrumentPopover = this.querySelector(".instrument-popover")
+
+        // suppress contextmenu on long touchscreen press on a waveform
+        this.addEventListener("contextmenu", (e) => {
+            if (e.target.closest(".waveform-track")) {
+                e.preventDefault();
+            }
+        });
 
         this.addEventListener("click", async (e) => {
             if (e.target.closest(".play-track-button")) {
@@ -450,7 +458,16 @@ class SongTrack extends HTMLElement {
                 e.preventDefault();
                 // set moved to false until pointer moves (i.e. not just a click)
                 moved = false;
-                selecting = true;
+                if (e.pointerType === "touch") {
+                    // on touch screen, require a brief hold before starting select (otherwise assume just scrolling)
+                    touchTimer = setTimeout(() => {
+                        selecting = true;
+                        // navigator.vibrate?.(10);
+                    }, 250);
+                } else {
+                    // just mouse so start selecting
+                    selecting = true;
+                }
                 // set selecting start
                 const waveformTrackRect = waveformTrack.getBoundingClientRect();
                 selectLeft = e.clientX - waveformTrackRect.left;
@@ -504,6 +521,9 @@ class SongTrack extends HTMLElement {
                     // hide edit div:
                     this.toggleEditDiv("hide");
                 }
+            } else {
+                // not selecting, clear timeout if necessary
+                clearTimeout(touchTimer);
             }
         });
         this.addEventListener("change", (e) => {

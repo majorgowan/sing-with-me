@@ -28,23 +28,24 @@
                 <th>Created by</th>
                 <th>Modified</th>
                 <th></th>
-                <th></th>
             </tr>
         </thead>
         <tbody>
             <% for (song of songList) { %>
                 <tr>
                     <td>
-                        <%= song.title %>
+                        <a href="/song?songId=<%= song.songId %>"><%= song.title %></a>
                     </td>
                     <td>
                         <%= song.createdBy %>
                     </td>
                     <td>
-                        <%= song.modified %>
-                    </td>
-                    <td>
-                        <a href="/song?songId=<%= song.songId %>">contribute</a>
+                        <%= song.modified ? new Date(song.modified).toLocaleString('en-CA', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                        }) : ""
+                        %>
                     </td>
                     <td>
                         <a href="/fork?songId=<%= song.songId %>">fork</a>
