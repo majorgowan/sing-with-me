@@ -64,7 +64,7 @@ export const analyze = async (instruction, midiData, verbose=false) => {
         
         For chordProgression provide a chord progression that underlies your composition.
         
-        Also specify the instrument to use: one of ["synth", "piano", "cello", "violin", "flute"] (with default "synth").
+        Also specify the instrument to use: one of ["synth", "piano", "cello", "violin", "flute", "saxophone"] (with default "synth").
         
         Include an explanation of your composition in the description field.
     `;
@@ -93,7 +93,7 @@ export const analyze = async (instruction, midiData, verbose=false) => {
                     "instrument": {
                         "type": "string",
                         "description": "Name of instrument to use",
-                        "enum": ["synth", "piano", "violin", "cello", "flute"]
+                        "enum": ["synth", "piano", "violin", "cello", "flute", "saxophone"]
                     },
                     "chordProgression": {
                         "type": "array",
@@ -109,7 +109,7 @@ export const analyze = async (instruction, midiData, verbose=false) => {
                         }
                     }
                 },
-                "required": ["description", "midiSequence", "chordProgression"],
+                "required": ["description", "midiSequence", "instrument", "chordProgression"],
                 "additionalProperties": false
             },
             "strict": true

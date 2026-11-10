@@ -158,7 +158,7 @@ export const makeWaveSurfer = (songTrack, blobUrl) => {
     });
 
     wavesurfer.on("timeupdate", (t) => {
-        songTrack.closest("song-div").syncTimeline(t);
+        if (songTrack.closest("song-div")) songTrack.closest("song-div").syncTimeline(t);
     });
 
     return wavesurfer;
@@ -522,18 +522,21 @@ export const aiTrack = async (midiData, instruction, csrfToken) => {
         return (noteData.length > 3 ? noteData[3] : 1.0);
     });
 
+    const instrument = cerebrasResponse.cerebras.instrument || "piano";
+
     // TODO: that duration restriction is unnecessary!!!  All that matters is the onsets are distinct and in order.
     const cerebrasMidiData = {
         "notes": notes,
         "onsets": onsets.map((onset, i) => i > 0 ? Math.max(onset, onsets[i - 1] + 0.01) : onset),
-        "durations": durations.map((duration, i) =>
-            i < durations.length - 1 ? Math.min(duration, onsets[i + 1] - onsets[i] - 0.01) : duration),
+        "durations": durations,
+        // "durations": durations.map((duration, i) =>
+        //     i < durations.length - 1 ? Math.min(duration, onsets[i + 1] - onsets[i] - 0.01) : duration),
         "volumes": volumes.map((volume) => Math.min(1.0, Math.max(0.0, volume)))
     };
 
     console.log(cerebrasMidiData);
 
-    const url = await midiToBlob(cerebrasMidiData, "piano");
+    const url = await midiToBlob(cerebrasMidiData, instrument);
 
     return {
         "blobUrl": url,
