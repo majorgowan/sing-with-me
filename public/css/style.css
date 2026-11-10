@@ -36,6 +36,34 @@ header {
     justify-content: center;
 }
 
+#search-bar-div {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+#search-bar-input {
+    padding: 5px 10px;
+    background-color: palegoldenrod;
+    border: none;
+    border-radius: 15px;
+}
+#song-list-div {
+    overflow-x: auto; /* horizontal scroll on small screens */
+    margin: 1rem 0;
+}
+#song-list-div table {
+    width: 100%;
+    border-collapse: collapse; /* merges adjacent borders into one clean line */
+}
+#song-list-div table td, song-list-div table th {
+    padding: 0.75em 1em; /* vertical, then horizontal breathing room */
+    text-align: left;
+    border-bottom: 1px solid #ddd; /* subtle row separator */
+}
+#create-new-song-div {
+    padding: 15px;
+}
+
 .song-space {
     position: relative;
 }

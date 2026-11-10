@@ -9,12 +9,24 @@
 
 <%- include("partials/header.ejs") %>
 
-<div class="song-list-div">
+<!-- TODO: implement search bar!! -->
+<div id="search-bar-div">
+    <input type="text" id="search-bar-input" placeholder="Search...">
+</div>
+
+<div id="create-new-song-div">
+    <form action="/song" method="get">
+        <button class="swm-button">Create new song!</button>
+    </form>
+</div>
+
+<div id="song-list-div">
     <table>
         <thead>
             <tr>
                 <th>Title</th>
                 <th>Created by</th>
+                <th>Modified</th>
                 <th></th>
                 <th></th>
             </tr>
@@ -29,6 +41,9 @@
                         <%= song.createdBy %>
                     </td>
                     <td>
+                        <%= song.modified %>
+                    </td>
+                    <td>
                         <a href="/song?songId=<%= song.songId %>">contribute</a>
                     </td>
                     <td>
@@ -39,9 +54,6 @@
         </tbody>
     </table>
 
-    <div class="create-new-song-div">
-        <a href="/song">Create new song!</a>
-    </div>
 </div>
 
 

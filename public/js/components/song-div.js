@@ -86,6 +86,7 @@ class Song extends HTMLElement {
             } else if (e.target.closest(".save-song-button")) {
                 e.preventDefault();
                 const songInfo = this.getSongData(true);
+                songInfo.modified = new Date();
                 console.log(songInfo);
                 // TODO: SAVE ALL NEW BZW. MODIFIED TRACKS
 
