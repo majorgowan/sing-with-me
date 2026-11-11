@@ -57,10 +57,17 @@ class SongTrack extends HTMLElement {
                 </div>
                 <div class="track-edit-div hidden-div">
                     <div>
-                        <span class="select-time-range"></span>
+                        <div class="select-time-range">
+                            <input type="text" inputmode="decimal" pattern="\\d*\\.?\\d*"
+                                   maxlength="6" class="select-time-input select-time-start">
+                            &ndash;
+                            <input type="text" inputmode="decimal" pattern="\\d*\\.?\\d*" 
+                                   maxlength="6" class="select-time-input select-time-end">
+                            s
+                        </div>
                     </div>
                     <button class="swm-button clear-button">Clear</button>
-                    <button class="swm-button copy-button">Copy</button>
+                    <!-- <button class="swm-button copy-button">Copy</button> -->
                     <button class="swm-button loop-button">Loop</button>
                 </div>
                 <div class="track-detail">
@@ -143,8 +150,6 @@ class SongTrack extends HTMLElement {
     }
 
     getTrackData() {
-        // TODO: add in midiData if it exists (need to JSON.stringify() probably)
-        //       also on retrieving it in song.ejs, <%- JSON.stringify(track.midiData) %>
         return {
             "trackId": this.getAttribute("trackId"),
             "filename": this.getAttribute("filename"),
@@ -204,9 +209,12 @@ class SongTrack extends HTMLElement {
         const waveformTrack = this.querySelector(".waveform-track");
 
         if (clear) {
+            this.selectStartPct = null;
+            this.selectEndPct = null;
             rangeSelectDiv.classList.add("hidden-div");
             rangeSelectDiv.style.left = 0;
             rangeSelectDiv.style.width = 0;
+            this.toggleEditDiv("hide");
         } else {
             rangeSelectDiv.classList.remove("hidden-div");
             rangeSelectDiv.style.left = this.selectStartPct * parseFloat(waveformTrack.style.width) + "px";
@@ -304,6 +312,22 @@ class SongTrack extends HTMLElement {
         this.addEventListener("contextmenu", (e) => {
             if (e.target.closest(".waveform-track")) {
                 e.preventDefault();
+            }
+        });
+
+        // event for setting selection start/end on tab away
+        this.addEventListener("focusout", (e) => {
+            if (e.target.closest(".select-time-input")) {
+                console.log("WE'VE GOT A RANGE CHANGE MEN!!!!");
+                const timeStartInput = this.querySelector(".select-time-start");
+                const timeEndInput = this.querySelector(".select-time-end");
+
+                if (parseFloat(timeStartInput.value) <= parseFloat(timeEndInput.value)) {
+                    this.selectStartPct = Math.max(0, parseFloat(timeStartInput.value) / this.duration);
+                    this.selectEndPct = Math.min(1, parseFloat(timeEndInput.value) / this.duration);
+                    console.log(this.selectStartPct, this.selectEndPct);
+                    this.setSelection();
+                }
             }
         });
 
@@ -509,17 +533,19 @@ class SongTrack extends HTMLElement {
                     // calculate start/end times
                     const startTime = this.selectStartPct * this.duration;
                     const endTime = this.selectEndPct * this.duration;
-                    this.querySelector(".select-time-range").innerHTML = `${startTime.toFixed(1)} s&ensp;-&ensp;${endTime.toFixed(1)} s`;
+                    this.querySelector(".select-time-start").value = `${startTime.toFixed(1)}`;
+                    this.querySelector(".select-time-end").value = `${endTime.toFixed(1)}`;
                     this.toggleEditDiv("show");
                 } else {
                     // cancel region
                     moved = false;
+                    // clear the selection and hide the edit menu
                     this.setSelection(true);
                     selectRight = null;
-                    this.selectStartPct = null;
-                    this.selectEndPct = null;
+                    // this.selectStartPct = null;
+                    // this.selectEndPct = null;
                     // hide edit div:
-                    this.toggleEditDiv("hide");
+                    // this.toggleEditDiv("hide");
                 }
             } else {
                 // not selecting, clear timeout if necessary

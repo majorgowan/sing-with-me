@@ -37,11 +37,6 @@ async function askCerebras(content,
 export const analyze = async (instruction, midiData, verbose=false) => {
     // generate the content for asking cerebras
 
-    // TODO: fix up schema
-    //       - description: text
-    //       - midiSequence: triples of (midiNote, onset, duration)
-    //       - chordProgression: pairs of (chordName, function in key, onset, duration)
-
     const midiString = midiData.notes.map(
         (n, i) => `(${n}, ${midiData.onsets[i].toFixed(1)}, ${midiData.durations[i].toFixed(1)})`
     ).join(", ");

@@ -225,7 +225,6 @@ export const makeWaveRecorder = async (newTrack, recorder) => {
 
 
 export const deleteAudioFromS3 = async (fileName) => {
-    // TODO: implement deleteAudioFromS3 function
     const urlResponse = await fetch(`/s3/delete-url?fileName=${encodeURIComponent(fileName)}`, {
         method: "GET",
         // headers: {
@@ -524,7 +523,6 @@ export const aiTrack = async (midiData, instruction, csrfToken) => {
 
     const instrument = cerebrasResponse.cerebras.instrument || "piano";
 
-    // TODO: that duration restriction is unnecessary!!!  All that matters is the onsets are distinct and in order.
     const cerebrasMidiData = {
         "notes": notes,
         "onsets": onsets.map((onset, i) => i > 0 ? Math.max(onset, onsets[i - 1] + 0.01) : onset),

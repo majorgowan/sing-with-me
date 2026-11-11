@@ -42,6 +42,9 @@ class Song extends HTMLElement {
             if (e.target.closest(".play-all-button")) {
                 e.preventDefault();
                 this.tracks.forEach(songTrack => {
+                    songTrack.setSelection(true);
+                });
+                this.tracks.forEach(songTrack => {
                     songTrack.playTrack(songTrack.volumeFactor, true);
                 });
             } else if (e.target.closest(".stop-all-button")) {
