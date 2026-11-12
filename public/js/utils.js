@@ -113,7 +113,7 @@ async function ensureBuffers(instrument) {
 // }
 
 
-const MINPXPERSEC = 10;
+const MINPXPERSEC = 8;
 
 
 export const makeWaveSurfer = (songTrack, blobUrl) => {
@@ -203,16 +203,13 @@ export const makeWaveRecorder = async (newTrack, recorder) => {
         trackDetailButtons.classList.remove("hidden-div");
         const muteLabel = newTrack.querySelector(".mute-checkbox-label");
         muteLabel.classList.remove("hidden-label");
-
-        const recordControlsDiv = newTrack.querySelector(".record-controls-div");
-        recordControlsDiv.classList.add("hidden-div");
     });
 
     newRecorder.on("ready", () => {
         newTrack.setDuration(newRecorder.getDuration());
         // set width of containing div proportional to duration
         const container =  newTrack.querySelector(".waveform-track");
-        container.style.width = `${newRecorder.getDuration() * MINPXPERSEC * 1.01}px`;
+        container.style.width = `${newRecorder.getDuration() * MINPXPERSEC * 1.01 + 2}px`;
         newTrack.closest("song-div").updateTimeline();
     });
 

@@ -189,7 +189,7 @@ header {
 .track-detail {
     /* width: auto; */
     /* flex: 0 0 30%; */
-    width: 300px;
+    width: 330px;
     margin-left: 12px;
     margin-right: 12px;
     padding: 15px;
@@ -216,6 +216,8 @@ header {
 .track-buttons-div {
     position: relative;
     width: fit-content;
+    display: flex;
+    flex-direction: row;
 }
 .input-overlay {
     z-index: 10;
@@ -245,7 +247,7 @@ header {
 }
 .waveform-track {
     /* flex: 0 0 60%;  /* don't grow, don't shrink, basis = 60% */
-    border: 1.5px solid saddlebrown;
+    border: 1px solid saddlebrown;
     background-color: blanchedalmond;
     border-radius: 12px;
     -webkit-touch-callout: none;
@@ -296,14 +298,31 @@ song-track, new-track {
     margin-bottom: 5px;
 }
 
-.count-down-div {
-    top: 20px;
-    right: 20px;
-    position: absolute;
-    font-size: xxx-large;
-    font-weight: bold;
-    color: darkgreen;
+.record-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(200, 160, 160, 0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
+.record-overlay div {
+    display: flex;
+    justify-content: center;
+}
+.count-down-div {
+    font-size: 24vmin;
+    font-weight: bold;
+    color: darkred;
+    text-align: center;
+}
+.record-stop-button {
+    border-radius: 40%;
+    font-size: 20vmin;
+}
+
 .modified-div {
     top: 40px;
     right: 20px;
@@ -330,7 +349,7 @@ song-track, new-track {
 }
 
 .hidden-div {
-    display: none;
+    display: none !important;
 }
 .hidden-button {
     display: none;

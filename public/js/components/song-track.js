@@ -36,6 +36,7 @@ class SongTrack extends HTMLElement {
 
     disconnectedCallback() {
         clearInterval(this._countDown);
+        clearTimeout(this._readyTimeout);
         clearTimeout(this._confirmTimeout);
     }
 
@@ -82,8 +83,6 @@ class SongTrack extends HTMLElement {
                                 By: ${createdBy}
                             </div>
                         </div>
-                        <div class="count-down-div hidden-div">
-                        </div>
                         <div class="modified-div hidden-div">
                         MODIFIED
                         </div>
@@ -103,6 +102,10 @@ class SongTrack extends HTMLElement {
                         Mute
                     </label>
                     <div class="track-buttons-div">
+                        <!-- only for recording -->
+                        <div class="track-record-buttons hidden-div">
+                            <button class="swm-button record-button" type="button">Record</button>
+                        </div>
                         <div class="track-detail-buttons hidden-div">
                             <button class="swm-button play-track-button" type="button">Play</button>
                             <button class="swm-button stop-track-button" type="button">Stop</button>
@@ -542,10 +545,6 @@ class SongTrack extends HTMLElement {
                     // clear the selection and hide the edit menu
                     this.setSelection(true);
                     selectRight = null;
-                    // this.selectStartPct = null;
-                    // this.selectEndPct = null;
-                    // hide edit div:
-                    // this.toggleEditDiv("hide");
                 }
             } else {
                 // not selecting, clear timeout if necessary
@@ -572,13 +571,15 @@ class NewTrack extends SongTrack {
 
     render() {
         super.render();
+        // expose the track record button panel
+        const trackRecordButtons = this.querySelector(".track-record-buttons");
+        trackRecordButtons.classList.remove("hidden-div");
         // Add the extra bits a new track needs
-        const trackButtonsDiv = this.querySelector(".track-buttons-div");
-        trackButtonsDiv.innerHTML += `
-            <div class="record-controls-div">
+        const trackDetail = this.querySelector(".track-detail");
+        trackDetail.innerHTML += `
+            <div class="record-overlay hidden-div">
                 <div class="count-down-div hidden-div"></div>
-                <div>
-                    <button class="swm-button record-button" type="button">Record</button>
+                <div class="record-stop-button-div hidden-div">
                     <button class="swm-button record-stop-button" type="button" disabled>Stop</button>
                 </div>
             </div>
@@ -608,6 +609,33 @@ class NewTrack extends SongTrack {
     attachListeners() {
         super.attachListeners();
 
+        // stop recording
+        const stopRecording = () => {
+            this.stopTrack();
+            if (playOtherTracks) {
+                parentSong.tracks.forEach((track) => {
+                    if (track !== this) {
+                        track.stopTrack();
+                    }
+                });
+            }
+
+            // hide the record overlay
+            const recordOverlay = this.querySelector(".record-overlay");
+            recordOverlay.classList.add("hidden-div");
+
+            const recordStopButtonDiv = this.querySelector(".record-stop-button-div");
+            recordStopButtonDiv.classList.add("hidden-div");
+        };
+
+        // to stop recording with space bar
+        const spaceHandler = (e) => {
+            if (e.code === "Space") {
+                e.preventDefault(); // stop page scroll
+                stopRecording();
+            }
+        };
+
         const parentSong = this.closest("song-div");
 
         // prepare to play other tracks
@@ -627,42 +655,49 @@ class NewTrack extends SongTrack {
                     sampleRate: 16000
                 };
 
-                const stopButton = this.querySelector(".record-stop-button");
-                if (stopButton) stopButton.disabled = false;
+                // expose the record overlay
+                const recordOverlay = this.querySelector(".record-overlay");
+                recordOverlay.classList.remove("hidden-div");
+
+                this.addEventListener("keydown", spaceHandler, {"once": true});
+
+                const recordStopButton = this.querySelector(".record-stop-button");
+                const recordStopButtonDiv = this.querySelector(".record-stop-button-div");
 
                 // start count down
-                let countDownValue = Number(timeSignatureSelect.value);
+                let countDownValue = Number(timeSignatureSelect.value) + 1;
                 const countDownDiv = this.querySelector(".count-down-div");
                 countDownDiv.classList.remove("hidden-div");
                 countDownDiv.textContent = countDownValue;
                 const tempo = 1000 * 60 / Math.floor(Math.abs(Number(bpmInput.value)));
-                this._countDown = setInterval(async () => {
-                    countDownValue--;
-                    countDownDiv.textContent = countDownValue;
-                    if (countDownValue === 0) {
-                        await this.wavesurfer.plugins[0].startRecording(recordingConstraints);
-                        if (playOtherTracks) {
-                            parentSong.tracks.forEach((track) => {
-                                if (track !== this) {
-                                    track.playTrack(playOtherTracksVolume);
-                                }
-                            });
+                // get ready message
+                countDownDiv.textContent = `Get ready on ${countDownValue - 1}!`;
+                this._readyTimeout = setTimeout(async () => {
+                    this._countDown = setInterval(async () => {
+                        countDownValue--;
+                        countDownDiv.textContent = countDownValue;
+                        if (countDownValue === 0) {
+                            console.log("COUNT DOWN FINISHED!!!!");
+                            recordStopButton.disabled = false;
+                            recordStopButtonDiv.classList.remove("hidden-div");
+
+                            countDownDiv.classList.add("hidden-div");
+                            await this.wavesurfer.plugins[0].startRecording(recordingConstraints);
+                            if (playOtherTracks) {
+                                parentSong.tracks.forEach((track) => {
+                                    if (track !== this) {
+                                        track.playTrack(playOtherTracksVolume);
+                                    }
+                                });
+                            }
+                            clearInterval(this._countDown);
+                            this.setModified();
                         }
-                        clearInterval(this._countDown);
-                        countDownDiv.classList.add("hidden-div");
-                        this.setModified();
-                    }
-                }, tempo);
+                    }, tempo);
+                }, 2000);
             } else if (e.target.closest(".record-stop-button")) {
                 console.log("STOPPING RECORDING!!!!");
-                this.stopTrack();
-                if (playOtherTracks) {
-                    parentSong.tracks.forEach((track) => {
-                        if (track !== this) {
-                            track.stopTrack();
-                        }
-                    });
-                }
+                stopRecording();
             }
 
         });
