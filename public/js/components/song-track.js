@@ -36,7 +36,6 @@ class SongTrack extends HTMLElement {
 
     disconnectedCallback() {
         clearInterval(this._countDown);
-        clearTimeout(this._readyTimeout);
         clearTimeout(this._confirmTimeout);
     }
 
@@ -579,7 +578,7 @@ class NewTrack extends SongTrack {
         trackDetail.innerHTML += `
             <div class="record-overlay hidden-div">
                 <div class="count-down-div hidden-div"></div>
-                <div class="record-stop-button-div hidden-div">
+                <div class="record-stop-button-div invisible-div">
                     <button class="swm-button record-stop-button" type="button" disabled>Stop</button>
                 </div>
             </div>
@@ -608,6 +607,7 @@ class NewTrack extends SongTrack {
 
     attachListeners() {
         super.attachListeners();
+        let counter;
 
         // stop recording
         const stopRecording = () => {
@@ -618,6 +618,7 @@ class NewTrack extends SongTrack {
                         track.stopTrack();
                     }
                 });
+                counter = 0;
             }
 
             // hide the record overlay
@@ -625,13 +626,14 @@ class NewTrack extends SongTrack {
             recordOverlay.classList.add("hidden-div");
 
             const recordStopButtonDiv = this.querySelector(".record-stop-button-div");
-            recordStopButtonDiv.classList.add("hidden-div");
+            recordStopButtonDiv.classList.add("invisible-div");
         };
 
         // to stop recording with space bar
         const spaceHandler = (e) => {
             if (e.code === "Space") {
                 e.preventDefault(); // stop page scroll
+                clearInterval(this._countDown);
                 stopRecording();
             }
         };
@@ -646,6 +648,7 @@ class NewTrack extends SongTrack {
 
         this.addEventListener("click", async (e) => {
             if (e.target.closest(".record-button")) {
+                counter = 0;
                 e.preventDefault();
                 await this.initRecorder();
 
@@ -663,40 +666,39 @@ class NewTrack extends SongTrack {
 
                 const recordStopButton = this.querySelector(".record-stop-button");
                 const recordStopButtonDiv = this.querySelector(".record-stop-button-div");
+                recordStopButtonDiv.classList.add("invisible-div");
 
                 // start count down
-                let countDownValue = Number(timeSignatureSelect.value) + 1;
+                let beatsPerMeasure = parseInt(timeSignatureSelect.value);
                 const countDownDiv = this.querySelector(".count-down-div");
                 countDownDiv.classList.remove("hidden-div");
-                countDownDiv.textContent = countDownValue;
                 const tempo = 1000 * 60 / Math.floor(Math.abs(Number(bpmInput.value)));
                 // get ready message
-                countDownDiv.textContent = `Get ready on ${countDownValue - 1}!`;
-                this._readyTimeout = setTimeout(async () => {
-                    this._countDown = setInterval(async () => {
-                        countDownValue--;
-                        countDownDiv.textContent = countDownValue;
-                        if (countDownValue === 0) {
-                            console.log("COUNT DOWN FINISHED!!!!");
-                            recordStopButton.disabled = false;
-                            recordStopButtonDiv.classList.remove("hidden-div");
-
-                            countDownDiv.classList.add("hidden-div");
-                            await this.wavesurfer.plugins[0].startRecording(recordingConstraints);
-                            if (playOtherTracks) {
-                                parentSong.tracks.forEach((track) => {
-                                    if (track !== this) {
-                                        track.playTrack(playOtherTracksVolume);
-                                    }
-                                });
-                            }
-                            clearInterval(this._countDown);
-                            this.setModified();
+                const baseText = `Get ready (in ${beatsPerMeasure}) . . . `;
+                countDownDiv.innerHTML = "&nbsp;<BR>" + baseText;
+                this._countDown = setInterval(async () => {
+                    counter++;
+                    countDownDiv.innerHTML = `${counter}<BR>${baseText}`;
+                    if (counter === beatsPerMeasure) {
+                        console.log("COUNT IN FINISHED!!!!");
+                        await this.wavesurfer.plugins[0].startRecording(recordingConstraints);
+                        if (playOtherTracks) {
+                            parentSong.tracks.forEach((track) => {
+                                if (track !== this) {
+                                    track.playTrack(playOtherTracksVolume);
+                                }
+                            });
                         }
-                    }, tempo);
-                }, 2000);
+                        this.setModified();
+                    } else if (counter > beatsPerMeasure) {
+                        countDownDiv.innerHTML = `${(counter - 1) % beatsPerMeasure + 1}<BR>&nbsp;`;
+                        recordStopButton.disabled = false;
+                        recordStopButtonDiv.classList.remove("invisible-div");
+                    }
+                }, tempo);
             } else if (e.target.closest(".record-stop-button")) {
                 console.log("STOPPING RECORDING!!!!");
+                clearInterval(this._countDown);
                 stopRecording();
             }
 

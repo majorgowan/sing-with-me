@@ -302,7 +302,7 @@ song-track, new-track {
     position: fixed;
     inset: 0;
     z-index: 1000;
-    background: rgba(200, 160, 160, 0.8);
+    background: rgba(200, 160, 160, 0.9);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -313,14 +313,17 @@ song-track, new-track {
     justify-content: center;
 }
 .count-down-div {
-    font-size: 24vmin;
+    font-size: 13vmin;
     font-weight: bold;
-    color: darkred;
+    color: darkblue;
     text-align: center;
+}
+.record-stop-button-div {
+    margin-top: 20px;
 }
 .record-stop-button {
     border-radius: 40%;
-    font-size: 20vmin;
+    font-size: 10vmin;
 }
 
 .modified-div {
@@ -356,6 +359,9 @@ song-track, new-track {
 }
 .hidden-label {
     display: none;
+}
+.invisible-div {
+    visibility: hidden;
 }
 .invisible-button {
     visibility: hidden;

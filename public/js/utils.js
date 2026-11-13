@@ -168,7 +168,11 @@ export const makeWaveSurfer = (songTrack, blobUrl) => {
 export const makeWaveRecorder = async (newTrack, recorder) => {
     if (recorder) {
         // destroy() automatically calls stopRecording() and stopMic() internally
-        recorder.destroy();
+        try {
+            recorder.destroy();
+        } catch (e) {
+            console.error(e);
+        }
         recorder = null;
     }
 

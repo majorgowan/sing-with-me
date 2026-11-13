@@ -26,9 +26,31 @@ self.onmessage = (e) => {
             case "melody": {
                 // note: need { } for scoping variables declared in a case block
                 console.log("in worker ... analyzing MELODY");
-                self.postMessage({"type": "progress", "value": "Analyzing melodia"});
                 self.postMessage({"type": "progress", "value": "I'm doing it you stupid woman!!"});
-                const melodia = essentia.PredominantPitchMelodia(signal);
+                self.postMessage({"type": "progress", "value": "Normalizing loudness"});
+                const normalized = essentia.EqualLoudness(signal).signal;
+                self.postMessage({"type": "progress", "value": "Analyzing melodia"});
+                // docs: https://mtg.github.io/essentia.js/docs/api/Essentia.html#PredominantPitchMelodia
+                //      PredominantPitchMelodia( signal [, binResolution [, filterIterations [, frameSize
+                //                                      [, guessUnvoiced [, harmonicWeight [, hopSize
+                //                                      [, magnitudeCompression [, magnitudeThreshold
+                //                                      [, maxFrequency [, minDuration [, minFrequency
+                //                                      [, numberHarmonics [, peakDistributionThreshold
+                //                                      [, peakFrameThreshold [, pitchContinuity
+                //                                      [, referenceFrequency [, sampleRate [, timeContinuity
+                //                                      [, voiceVibrato [, voicingTolerance
+                //                                      ] ] ] ] ] ] ] ] ] ] ] ] ] ] ] ] ] ] ] ] )
+                // defaults:
+                // const melodia = essentia.PredominantPitchMelodia(
+                //     normalized, 10, 3, 2048, false, 0.8, 128, 1, 40, 20000, 100,
+                //     80, 20, 0.9, 0.9, 27.5625, 55, 44100, 100, false, 0.2
+                // );
+                const melodia = essentia.PredominantPitchMelodia(
+                    normalized, 10, 3, 2048, false, 0.8, 128, 1, 40, 20000, 100, 80, 20, 0.9, 0.9, // defaults
+                    40,  // pitchContinuity (not default)
+                    55, 44100, 100, false, // defaults
+                    0.5   // voicingTolerance (not default)
+                );
                 self.postMessage({"type": "progress", "value": "Analyzing segments"});
                 const segments = essentia.PitchContourSegmentation(melodia.pitch, signal);
 
@@ -65,7 +87,8 @@ self.onmessage = (e) => {
         });
 
     } catch (err) {
-        console.error(`[${type}] FAILED: ${err}`);
+        console.error(err);
+        // console.error(`[${type}] FAILED: ${err}`);
         self.postMessage({
             type,
             "error": err.message
