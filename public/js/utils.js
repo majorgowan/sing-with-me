@@ -180,23 +180,35 @@ export const makeRecorder = async (songTrack) => {
         minPxPerSec: MINPXPERSEC
     });
 
-    // 1. Get the mic stream
     const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { sampleRate: 44100 }
+        "audio": {
+            "sampleRate": 44100,
+            "echoCancellation": true,
+            "noiseSuppression": true,
+            "autoGainControl": false
+        }
     });
+
+    // audio context for real-time processing and visualizing
+    const audioCtx = new AudioContext();
+    const source = audioCtx.createMediaStreamSource(stream);
+    const gain = audioCtx.createGain();
+    const dest = audioCtx.createMediaStreamDestination();
+    source.connect(gain).connect(dest);
+
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    source.connect(analyser);
+
+    const dataArray = new Uint8Array(analyser.fftSize);
 
     // 2. Set up MediaRecorder
     const mimeType = ["audio/webm", "audio/wav", "audio/mpeg", "audio/mp4"]
         .find(m => MediaRecorder.isTypeSupported(m)) || "";
-    const mediaRecorder = new MediaRecorder(stream, {
+    const mediaRecorder = new MediaRecorder(dest.stream, {
         mimeType,
         audioBitsPerSecond: 128000
     });
-
-    // give the container a non-zero size
-    // const container = songTrack.querySelector(".waveform-track");
-    // container.style.width = "400px";
-    // container.style.height = "128px";
 
     // record chunks
     const chunks = [];
@@ -210,8 +222,6 @@ export const makeRecorder = async (songTrack) => {
         const blob = new Blob(chunks, { type: mimeType || "audio/webm" });
         // keep mic open in case of rerecording
         chunks.length = 0;
-        // Stop the mic tracks
-        // stream.getTracks().forEach(t => t.stop());
 
         // 3. Render the final waveform in WaveSurfer
         wavesurfer.load(URL.createObjectURL(blob)); // ← just load new audio
@@ -233,25 +243,81 @@ export const makeRecorder = async (songTrack) => {
         songTrack.querySelector(".mute-checkbox-label").classList.remove("hidden-label");
     };
 
+    // TODO: some sort of visualizer for the ongoing recorder (in the overlay)
+    //       need to get the AudioContext and source and cetera...
+    const canvas = songTrack.querySelector(".recording-visualizer-canvas");
+    const ctx2d = canvas.getContext("2d");
+    let rafId;   // frame ID for visualizer (needed to cancel recursive loop in stop())
+
+    const drawVisualizer = () => {
+        analyser.getByteTimeDomainData(dataArray);
+
+        ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+        ctx2d.beginPath();
+        ctx2d.strokeStyle = "darkgreen";
+        ctx2d.lineWidth = 7;
+
+        const sliceWidth = canvas.width / dataArray.length;
+        let x = 0;
+
+        for (let i = 0; i < dataArray.length; i++) {
+            // dataArray values are 0–255, center is 128
+            const v = dataArray[i] / 128.0;
+            const y = (v * canvas.height) / 2;
+
+            if (i === 0) ctx2d.moveTo(x, y);
+            else ctx2d.lineTo(x, y);
+            x += sliceWidth;
+        }
+
+        ctx2d.stroke();
+        rafId = requestAnimationFrame(drawVisualizer);
+    };
+
+
     // --- Handle ---
     return {
         start() {
             console.log("STARTING RECORDER. . . ");
+
+            if (audioCtx.state === "suspended") audioCtx.resume();
+            if (mediaRecorder.state === "recording") return;
+
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(1, audioCtx.currentTime + 0.05);
             mediaRecorder.start(200);
+            // start visualizing
+            canvas.classList.remove("invisible-div");
+            drawVisualizer();
         },
         isRecording() {
             return mediaRecorder.state === "recording";
         },
         stop() {
             console.log("STOPPING RECORDER. . . ");
-            if (mediaRecorder.state !== "inactive") mediaRecorder.stop();
+
+            if (mediaRecorder.state === "inactive") return;
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.03);
+            setTimeout(() => mediaRecorder.stop(), 50);
+            // stop visualizing
+            cancelAnimationFrame(rafId);
+            canvas.classList.add("invisible-div");
         },
         destroy() {
             console.log("DESTROYING RECORDER. . . ");
             this.stop();
+
             // Stop the mic tracks
             stream.getTracks().forEach(t => t.stop());
 
+            // clean up audiocontext
+            source.disconnect();
+            gain.disconnect();
+            audioCtx.close();
+            stream.getTracks().forEach(t => t.stop());
+
+            // destroy wavesurfer
+            wavesurfer.destroy();
         }
     };
 

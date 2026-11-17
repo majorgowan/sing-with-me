@@ -578,6 +578,7 @@ class NewTrack extends SongTrack {
         trackDetail.innerHTML += `
             <div class="record-overlay hidden-div">
                 <div class="count-down-div hidden-div"></div>
+                <canvas class="recording-visualizer-canvas invisible-div"></canvas>
                 <div class="record-stop-button-div invisible-div">
                     <button class="swm-button record-stop-button" type="button" disabled>Stop</button>
                 </div>
@@ -648,12 +649,6 @@ class NewTrack extends SongTrack {
                 counter = 0;
                 e.preventDefault();
                 // await this.initRecorder();
-
-                // const recordingConstraints = {
-                //     echoCancellation: true,
-                //     noiseSuppression: true,
-                //     sampleRate: 16000
-                // };
 
                 // expose the record overlay
                 const recordOverlay = this.querySelector(".record-overlay");
