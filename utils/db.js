@@ -56,7 +56,7 @@ export const connectToDatabase = async (dbname) => {
         return { client, dbInstance }
 
     } catch (err) {
-        console.error('Database connection failed:', error);
+        console.error('Database connection failed:', err);
         process.exit(1);
     }
 }

@@ -3,7 +3,7 @@ import {
     uploadAudioToS3,
     deleteAudioFromS3,
     makeWaveSurfer,
-    makeWaveRecorder,
+    makeRecorder,
     editTrack,
     midifyTrack,
     aiTrack
@@ -237,7 +237,7 @@ class SongTrack extends HTMLElement {
     }
 
     isMuted() {
-        console.log(this.getAttribute("title") + " muted?: " + this.querySelector(".mute-checkbox").checked);
+        // console.log(this.getAttribute("title") + " muted?: " + this.querySelector(".mute-checkbox").checked);
         return this.querySelector(".mute-checkbox").checked;
     }
 
@@ -586,11 +586,8 @@ class NewTrack extends SongTrack {
     }
 
     async initWaveform() {
-        this.wavesurfer = null;
-    }
-
-    async initRecorder() {
-        this.wavesurfer = await makeWaveRecorder(this, this.wavesurfer);
+        this.waveform = null;
+        this.recorder = await makeRecorder(this);
     }
 
     setReadOnly() {
@@ -600,8 +597,8 @@ class NewTrack extends SongTrack {
 
     stopTrack() {
         super.stopTrack();
-        if (this.wavesurfer && this.wavesurfer.plugins[0].isRecording()) {
-            this.wavesurfer.plugins[0].stopRecording();
+        if (this.wavesurfer && this.recorder.isRecording()) {
+            this.recorder.stop();
         }
     }
 
@@ -650,13 +647,13 @@ class NewTrack extends SongTrack {
             if (e.target.closest(".record-button")) {
                 counter = 0;
                 e.preventDefault();
-                await this.initRecorder();
+                // await this.initRecorder();
 
-                const recordingConstraints = {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    sampleRate: 16000
-                };
+                // const recordingConstraints = {
+                //     echoCancellation: true,
+                //     noiseSuppression: true,
+                //     sampleRate: 16000
+                // };
 
                 // expose the record overlay
                 const recordOverlay = this.querySelector(".record-overlay");
@@ -681,7 +678,7 @@ class NewTrack extends SongTrack {
                     countDownDiv.innerHTML = `${counter}<BR>${baseText}`;
                     if (counter === beatsPerMeasure) {
                         console.log("COUNT IN FINISHED!!!!");
-                        await this.wavesurfer.plugins[0].startRecording(recordingConstraints);
+                        await this.recorder.start();
                         if (playOtherTracks) {
                             parentSong.tracks.forEach((track) => {
                                 if (track !== this) {
@@ -698,6 +695,7 @@ class NewTrack extends SongTrack {
                 }, tempo);
             } else if (e.target.closest(".record-stop-button")) {
                 console.log("STOPPING RECORDING!!!!");
+                this.recorder.stop();
                 clearInterval(this._countDown);
                 stopRecording();
             }

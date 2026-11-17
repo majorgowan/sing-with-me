@@ -1,5 +1,5 @@
 import WaveSurfer from "https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js";
-import RecordPlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/record.esm.js";
+// import RecordPlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/record.esm.js";
 // import TimelinePlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/timeline.esm.js";
 import encode from "https://esm.sh/@audio/encode"
 
@@ -165,64 +165,157 @@ export const makeWaveSurfer = (songTrack, blobUrl) => {
 };
 
 
-export const makeWaveRecorder = async (newTrack, recorder) => {
-    if (recorder) {
-        // destroy() automatically calls stopRecording() and stopMic() internally
-        try {
-            recorder.destroy();
-        } catch (e) {
-            console.error(e);
-        }
-        recorder = null;
-    }
+export const makeRecorder = async (songTrack) => {
 
-    // Create a new Wavesurfer instance
-    const newRecorder = WaveSurfer.create({
-        "container": newTrack.querySelector(".waveform-track"),
-        "sampleRate": 44100,
-        "waveColor": "darkgreen",
-        "progressColor": "olive",
-        "barWidth": 2,
-        "barRadius": 4,
-        "interact": false,
-        "normalize": true,
-        "fillParent": false,
-        "minPxPerSec": MINPXPERSEC,
-        "plugins": [
-            RecordPlugin.create({
-                scrollingWaveform: true, // Optional: scroll waveform while recording
-                renderRecordedAudio: true // Optional: render final audio after stop
-            }),
-            // TimelinePlugin.create()
-        ]
+    // 0. Create a new WaveSurfer object
+    const wavesurfer = WaveSurfer.create({
+        container: songTrack.querySelector(".waveform-track"),
+        waveColor: "darkgreen",
+        progressColor: "olive",
+        barWidth: 2,
+        barRadius: 4,
+        interact: false,
+        normalize: true,
+        fillParent: false,
+        minPxPerSec: MINPXPERSEC
     });
 
-    newRecorder.plugins[0].on("record-end", (blob) => {
-        console.log("finished recording");
-        const recButton = newTrack.querySelector(".save-recording-button");
+    // 1. Get the mic stream
+    const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { sampleRate: 44100 }
+    });
+
+    // 2. Set up MediaRecorder
+    const mimeType = ["audio/webm", "audio/wav", "audio/mpeg", "audio/mp4"]
+        .find(m => MediaRecorder.isTypeSupported(m)) || "";
+    const mediaRecorder = new MediaRecorder(stream, {
+        mimeType,
+        audioBitsPerSecond: 128000
+    });
+
+    // give the container a non-zero size
+    // const container = songTrack.querySelector(".waveform-track");
+    // container.style.width = "400px";
+    // container.style.height = "128px";
+
+    // record chunks
+    const chunks = [];
+    mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = () => {
+        console.log("Media Recorder stopped");
+
+        const blob = new Blob(chunks, { type: mimeType || "audio/webm" });
+        // keep mic open in case of rerecording
+        chunks.length = 0;
+        // Stop the mic tracks
+        // stream.getTracks().forEach(t => t.stop());
+
+        // 3. Render the final waveform in WaveSurfer
+        wavesurfer.load(URL.createObjectURL(blob)); // ← just load new audio
+
+        wavesurfer.on("ready", () => {
+            console.log("WAVE FORM READY TO ROCK & ROLL!!!!");
+            songTrack.wavesurfer = wavesurfer;
+            songTrack.setDuration(wavesurfer.getDuration());
+            const container = songTrack.querySelector('.waveform-track');
+            container.style.width = `${wavesurfer.getDuration() * MINPXPERSEC * 1.01 + 2}px`;
+            songTrack.closest("song-div").updateTimeline();
+        });
+
+        // 4. Fire your "record-end" logic
+        const recButton = songTrack.querySelector(".save-recording-button");
         if (recButton) recButton.disabled = false;
-        newTrack.recordedBlob = blob;
+        songTrack.recordedBlob = blob;
+        songTrack.querySelector(".track-detail-buttons").classList.remove("hidden-div");
+        songTrack.querySelector(".mute-checkbox-label").classList.remove("hidden-label");
+    };
 
-        const trackDetailButtons = newTrack.querySelector(".track-detail-buttons");
-        trackDetailButtons.classList.remove("hidden-div");
-        const muteLabel = newTrack.querySelector(".mute-checkbox-label");
-        muteLabel.classList.remove("hidden-label");
-    });
+    // --- Handle ---
+    return {
+        start() {
+            console.log("STARTING RECORDER. . . ");
+            mediaRecorder.start(200);
+        },
+        isRecording() {
+            return mediaRecorder.state === "recording";
+        },
+        stop() {
+            console.log("STOPPING RECORDER. . . ");
+            if (mediaRecorder.state !== "inactive") mediaRecorder.stop();
+        },
+        destroy() {
+            console.log("DESTROYING RECORDER. . . ");
+            this.stop();
+            // Stop the mic tracks
+            stream.getTracks().forEach(t => t.stop());
 
-    newRecorder.on("ready", () => {
-        newTrack.setDuration(newRecorder.getDuration());
-        // set width of containing div proportional to duration
-        const container =  newTrack.querySelector(".waveform-track");
-        container.style.width = `${newRecorder.getDuration() * MINPXPERSEC * 1.01 + 2}px`;
-        newTrack.closest("song-div").updateTimeline();
-    });
+        }
+    };
 
-    // newRecorder.on("timeupdate", (t) => {
-    //     songTrack.closest("song-div").syncTimeline(t);
-    // });
-
-    return newRecorder;
 };
+
+
+// export const makeWaveRecorder = async (newTrack, recorder) => {
+//     if (recorder) {
+//         // destroy() automatically calls stopRecording() and stopMic() internally
+//         try {
+//             recorder.destroy();
+//         } catch (e) {
+//             console.error(e);
+//         }
+//         recorder = null;
+//     }
+//
+//     // Create a new Wavesurfer instance
+//     const newRecorder = WaveSurfer.create({
+//         "container": newTrack.querySelector(".waveform-track"),
+//         "sampleRate": 44100,
+//         "waveColor": "darkgreen",
+//         "progressColor": "olive",
+//         "barWidth": 2,
+//         "barRadius": 4,
+//         "interact": false,
+//         "normalize": true,
+//         "fillParent": false,
+//         "minPxPerSec": MINPXPERSEC,
+//         "plugins": [
+//             RecordPlugin.create({
+//                 scrollingWaveform: true, // Optional: scroll waveform while recording
+//                 renderRecordedAudio: true // Optional: render final audio after stop
+//             }),
+//             // TimelinePlugin.create()
+//         ]
+//     });
+//
+//     newRecorder.plugins[0].on("record-end", (blob) => {
+//         console.log("finished recording");
+//         const recButton = newTrack.querySelector(".save-recording-button");
+//         if (recButton) recButton.disabled = false;
+//         newTrack.recordedBlob = blob;
+//
+//         const trackDetailButtons = newTrack.querySelector(".track-detail-buttons");
+//         trackDetailButtons.classList.remove("hidden-div");
+//         const muteLabel = newTrack.querySelector(".mute-checkbox-label");
+//         muteLabel.classList.remove("hidden-label");
+//     });
+//
+//     newRecorder.on("ready", () => {
+//         newTrack.setDuration(newRecorder.getDuration());
+//         // set width of containing div proportional to duration
+//         const container =  newTrack.querySelector(".waveform-track");
+//         container.style.width = `${newRecorder.getDuration() * MINPXPERSEC * 1.01 + 2}px`;
+//         newTrack.closest("song-div").updateTimeline();
+//     });
+//
+//     // newRecorder.on("timeupdate", (t) => {
+//     //     songTrack.closest("song-div").syncTimeline(t);
+//     // });
+//
+//     return newRecorder;
+// };
 
 
 export const deleteAudioFromS3 = async (fileName) => {
@@ -393,6 +486,10 @@ export const editTrack = async (songTrack, start, end, operation) => {
     const bytes = await encode.webm(channelData, {
         sampleRate: audioBuffer.sampleRate
     });
+
+    // TODO: don't reencode the blob here (very slow), rather just edit the in-memory buffer
+    //       and have wavesurfer rerender the display;
+    //       generate the blob and URL only when saving the track to S3
 
     const blob = new Blob([bytes], { type: "audio/webm" });
     const url = URL.createObjectURL(blob);
