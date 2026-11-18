@@ -198,6 +198,7 @@ export const makeRecorder = async (songTrack) => {
 
     const analyser = audioCtx.createAnalyser();
     analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.9;
     source.connect(analyser);
 
     const dataArray = new Uint8Array(analyser.fftSize);
@@ -243,34 +244,38 @@ export const makeRecorder = async (songTrack) => {
         songTrack.querySelector(".mute-checkbox-label").classList.remove("hidden-label");
     };
 
-    // TODO: some sort of visualizer for the ongoing recorder (in the overlay)
-    //       need to get the AudioContext and source and cetera...
+    // visualizer
     const canvas = songTrack.querySelector(".recording-visualizer-canvas");
     const ctx2d = canvas.getContext("2d");
     let rafId;   // frame ID for visualizer (needed to cancel recursive loop in stop())
 
     const drawVisualizer = () => {
-        analyser.getByteTimeDomainData(dataArray);
+        // analyser.getByteTimeDomainData(dataArray);   // draw a wave representation of instantaneous signal
+        analyser.getByteFrequencyData(dataArray);       // draw frequency spectrum
 
         ctx2d.clearRect(0, 0, canvas.width, canvas.height);
-        ctx2d.beginPath();
-        ctx2d.strokeStyle = "darkgreen";
-        ctx2d.lineWidth = 7;
 
-        const sliceWidth = canvas.width / dataArray.length;
-        let x = 0;
 
-        for (let i = 0; i < dataArray.length; i++) {
-            // dataArray values are 0–255, center is 128
-            const v = dataArray[i] / 128.0;
-            const y = (v * canvas.height) / 2;
+        const START = 20;
+        const END = Math.min(100, dataArray.length - 1);
+        const barWidth = canvas.width / (END + 1);
 
-            if (i === 0) ctx2d.moveTo(x, y);
-            else ctx2d.lineTo(x, y);
-            x += sliceWidth;
+        for (let i = START; i < END; i++) {
+            const barHeight = (dataArray[i] / 255) * canvas.height;
+            // Log-scaled x position (0 at left, canvas.width at right)
+            // const x = (Math.log(1 + i) / Math.log(1 + dataArray.length)) * canvas.width;
+            // linear visualizer with low-pass filter
+            const x = ((i - START) / (END - START + 1)) * canvas.width;
+
+            ctx2d.fillStyle = "darkgreen";
+            ctx2d.fillRect(
+                x,
+                canvas.height - barHeight,  // ← bars grow upward
+                barWidth - 1,
+                barHeight
+            );
         }
 
-        ctx2d.stroke();
         rafId = requestAnimationFrame(drawVisualizer);
     };
 
@@ -482,6 +487,72 @@ export const loadAudioBlob = async (fileName) => {
     console.log("Audio loaded from S3!");
 
     return audioBlob;
+};
+
+
+export const encodeBufferToBlob = async (buffer, format) => {
+
+    const channelData = [];
+    for (let i = 0; i < buffer.numberOfChannels; i++) {
+        channelData.push(buffer.getChannelData(i));
+    }
+
+    const options = {
+        "sampleRate": buffer.sampleRate,
+        "bitrate": 128
+    };
+
+    const bytes = format === "mp3"
+        ? await encode.mp3(channelData, options)
+        : await encode.webm(channelData, options);
+
+    const blob = new Blob([bytes], {
+        type: format === "mp3" ? encode.mime.mp3 : encode.mime.webm
+    });
+
+    return URL.createObjectURL(blob);
+};
+
+
+export const mixTracks = async (songTracks) => {
+    const audioCtx = new AudioContext();
+
+    // Decode all tracks into AudioBuffers
+    const buffers = await Promise.all(
+        songTracks.map(w => w.wavesurfer.getDecodedData())
+    );
+
+    // Determine output dimensions
+    const maxDuration = Math.max(...buffers.map(b => b.duration));
+    const channels = Math.max(...buffers.map(b => b.numberOfChannels));
+    const sampleRate = buffers[0].sampleRate;
+
+    // Create the offline context (channels, length in samples, sampleRate)
+    const offlineCtx = new OfflineAudioContext(
+        channels,
+        Math.ceil(maxDuration * sampleRate),
+        sampleRate
+    );
+
+    // Wire each buffer as a source into the destination
+    for (let i = 0; i < buffers.length; i++) {
+        const source = offlineCtx.createBufferSource();
+        source.buffer = buffers[i];
+
+        // scale each track by its volume
+        const gain = offlineCtx.createGain();
+        // TODO: this doesn't seem to be doing anything (check volumeFactor)
+        gain.gain.value = songTracks[i].volumeFactor;
+
+        source.connect(gain);
+        gain.connect(offlineCtx.destination);
+
+        source.start(0);
+    }
+
+    // Render — returns a Promise<AudioBuffer>
+    const mixedBuffer = await offlineCtx.startRendering();
+    return mixedBuffer;
 };
 
 

@@ -314,7 +314,9 @@ song-track, new-track {
 }
 .recording-visualizer-canvas {
     width: 40%;
-    height: 10vmin;
+    height: 15vmin;
+    margin: 30px;
+    background: transparent;
 }
 .count-down-div {
     font-size: 13vmin;
@@ -369,6 +371,9 @@ song-track, new-track {
 }
 .invisible-button {
     visibility: hidden;
+}
+.flash-div {
+    filter: brightness(1.5);
 }
 
 /* implement popover menu */

@@ -667,11 +667,11 @@ class NewTrack extends SongTrack {
                 const tempo = 1000 * 60 / Math.floor(Math.abs(Number(bpmInput.value)));
                 // get ready message
                 const baseText = `Get ready (in ${beatsPerMeasure}) . . . `;
-                countDownDiv.innerHTML = "&nbsp;<BR>" + baseText;
+                countDownDiv.innerHTML = `${baseText}<BR>&nbsp;`;
                 this._countDown = setInterval(async () => {
                     counter++;
-                    countDownDiv.innerHTML = `${counter}<BR>${baseText}`;
-                    if (counter === beatsPerMeasure) {
+                    countDownDiv.innerHTML = `${baseText}<BR>${(counter - 1) % beatsPerMeasure + 1}`;
+                    if (counter - 1 === beatsPerMeasure) {
                         console.log("COUNT IN FINISHED!!!!");
                         await this.recorder.start();
                         if (playOtherTracks) {
@@ -682,10 +682,15 @@ class NewTrack extends SongTrack {
                             });
                         }
                         this.setModified();
-                    } else if (counter > beatsPerMeasure) {
-                        countDownDiv.innerHTML = `${(counter - 1) % beatsPerMeasure + 1}<BR>&nbsp;`;
+                    } else if (counter - 1 > beatsPerMeasure) {
+                        countDownDiv.innerHTML = `<BR>${(counter - 1) % beatsPerMeasure + 1}`;
                         recordStopButton.disabled = false;
                         recordStopButtonDiv.classList.remove("invisible-div");
+                    }
+                    if (counter > beatsPerMeasure && !((counter - 1) % beatsPerMeasure)) {
+                        recordOverlay.classList.add("flash-div");
+                    } else {
+                        recordOverlay.classList.remove("flash-div");
                     }
                 }, tempo);
             } else if (e.target.closest(".record-stop-button")) {

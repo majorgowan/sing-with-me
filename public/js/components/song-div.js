@@ -1,3 +1,9 @@
+import {
+    mixTracks,
+    encodeBufferToBlob
+} from "../utils.js";
+
+
 class Song extends HTMLElement {
 
     #observer = null;
@@ -114,6 +120,20 @@ class Song extends HTMLElement {
                     this.setAttribute("song-id", data.songId);
                     console.log("updated song id", data.songId);
                 }
+            } else if (e.target.closest(".download-song-button")) {
+
+                const songTracksToMix = Array.from(this.tracks).filter(songTrack => !songTrack.isMuted());
+                const mixedBuffer = await mixTracks(songTracksToMix);
+                const mixedUrl = await encodeBufferToBlob(mixedBuffer, "mp3");
+
+                // create a link in memory to hold the url
+                const a = document.createElement("a");
+                a.href = mixedUrl;
+                const songTitle = this.querySelector(".song-title-input").value.replace(/ /g, "_");;
+
+                a.download = `SWM_${songTitle}.mp3`; // filename
+                a.click();
+
             } else if (e.target.closest(".timeline")) {
                 e.preventDefault();
                 // cue all tracks to click position
