@@ -48,6 +48,7 @@ class SongTrack extends HTMLElement {
         // get the username of the logged in user (certain features only if track owned by that user)
         const userName = document.querySelector('meta[name="username"]').content;
         const isOwner = userName === createdBy;
+        const volume = this.getAttribute("volume") || 1;
 
         this.innerHTML = `
             <div class="track-div" data-track-id="${trackId}">
@@ -72,7 +73,7 @@ class SongTrack extends HTMLElement {
                 </div>
                 <div class="track-detail">
                     <button class="move-grab-button">&parallel;</button>
-                    <input type="range" min="0" max="1" step="0.1" value="1" class="volume-slider">
+                    <input type="range" min="0" max="1" step="0.1" value="${volume}" class="volume-slider">
                     <div class="track-detail-head-div">
                         <div>
                             <div>
@@ -160,7 +161,8 @@ class SongTrack extends HTMLElement {
             "saved": this.getAttribute("saved"),
             "duration": this.duration,
             "createdBy": this.getAttribute("created-by"),
-            "midiData": this.midiData
+            "midiData": this.midiData,
+            "volume": this.volumeFactor
         };
     }
 
@@ -199,6 +201,8 @@ class SongTrack extends HTMLElement {
     setModified(unset) {
         if (unset) {
             this.modified = false;
+            this.querySelector(".modified-div").classList.add("hidden-div");
+            this.querySelector(".save-track-button").classList.add("hidden-menu-button");
         } else {
             this.modified = true;
             this.querySelector(".modified-div").classList.remove("hidden-div");
@@ -263,6 +267,13 @@ class SongTrack extends HTMLElement {
         if (this.wavesurfer && this.wavesurfer.isPlaying()) {
             this.wavesurfer.pause();
         }
+    }
+
+    async saveTrack() {
+        await uploadAudioToS3(this.recordedBlob, this.getAttribute("filename"));
+        this.setAttribute("saved", "true");
+        // unset modified
+        this.setModified(true);
     }
 
     async midify() {
@@ -428,7 +439,6 @@ class SongTrack extends HTMLElement {
                 dotsMenuWrap.classList.toggle("open-menu");
             } else if (e.target.closest(".duplicate-button")) {
                 e.preventDefault();
-                // TODO: IMPLEMENT THIS
                 console.log("duplicate the whole track please");
                 const dupTrack = document.createElement("song-track");
                 const timeStamp = `${Date.now()}`;
@@ -448,8 +458,7 @@ class SongTrack extends HTMLElement {
                 dotsMenuWrap.classList.remove("open-menu");
             } else if (e.target.closest(".save-track-button")) {
                 e.preventDefault();
-                await uploadAudioToS3(this.recordedBlob, this.getAttribute("filename"));
-                this.setAttribute("saved", "true");
+                this.saveTrack();
                 // close the dots menu
                 dotsMenuWrap.classList.remove("open-menu");
             } else if (e.target.closest(".delete-track-button")) {

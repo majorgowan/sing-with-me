@@ -101,6 +101,7 @@
                         <% if (track.midiData != null) { %>
                             midiData="<%= JSON.stringify(track.midiData) %>" %>
                         <% } %>
+                        volume="<%= track.volume ? track.volume : 1 %>"
                         saved="true">
             </song-track>
         <% } %>

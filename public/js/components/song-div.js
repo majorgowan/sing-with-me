@@ -94,10 +94,17 @@ class Song extends HTMLElement {
                 addNewTrackDiv.prepend(el); // your track container
             } else if (e.target.closest(".save-song-button")) {
                 e.preventDefault();
+
+                // save any modified tracks to S3
+                for (const track of this.tracks) {
+                    if (track.modified) {
+                        await track.saveTrack();
+                    }
+                }
+
                 const songInfo = this.getSongData(true);
                 songInfo.modified = new Date();
                 console.log(songInfo);
-                // TODO: SAVE ALL NEW BZW. MODIFIED TRACKS
 
                 const requestBody = {"songInfo": songInfo};
 

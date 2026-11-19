@@ -53,15 +53,15 @@ const SAMPLE_SOURCES = {
     flute: {
         baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/flute/",
         notes: {
-            72:  "C4.mp3",   // sounds as C5
-            76:  "E4.mp3",   // sounds as E5
-            81:  "A4.mp3",   // sounds as A5  (there's an octave shift in the flute data)
-            84:  "C5.mp3",   // sounds as C6
-            88:  "E5.mp3",   // sounds as E6
-            93:  "A5.mp3",   // sounds as A6
-            96:  "C6.mp3",   // sounds as C7
-            100: "E6.mp3",   // sounds as E7
-            105: "A6.mp3",   // sounds as A7
+            60: "C4.mp3",   // sounds as C5
+            64: "E4.mp3",   // sounds as E5
+            69: "A4.mp3",   // sounds as A5  (there's an octave shift in the flute data)
+            72: "C5.mp3",   // sounds as C6
+            76: "E5.mp3",   // sounds as E6
+            81: "A5.mp3",   // sounds as A6
+            84: "C6.mp3",   // sounds as C7
+            88: "E6.mp3",   // sounds as E7
+            93: "A6.mp3",   // sounds as A7
         },
         release: 0.4,
     },
@@ -541,7 +541,7 @@ export const mixTracks = async (songTracks) => {
 
         // scale each track by its volume
         const gain = offlineCtx.createGain();
-        // TODO: this doesn't seem to be doing anything (check volumeFactor)
+        console.log(`Track ${i} volume: ${songTracks[i].volumeFactor}`);
         gain.gain.value = songTracks[i].volumeFactor;
 
         source.connect(gain);
