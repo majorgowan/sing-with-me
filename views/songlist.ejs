@@ -28,6 +28,7 @@
                 <th>Created by</th>
                 <th>Modified</th>
                 <th></th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
@@ -48,7 +49,21 @@
                         %>
                     </td>
                     <td>
-                        <a href="/fork?songId=<%= song.songId %>">fork</a>
+                        <!-- TODO: Implement delete (using Javascript to fetch delete request)
+                                   Remember to clean up unattached webm files from S3 on delete -->
+                        <% if (song.createdBy === username) { %>
+                            <button class="swm-button"
+                                    id="delete-song-button"
+                                    data-songId="<%= song.songId %>">Delete</button>
+                            <button class="swm-button hidden-button"
+                                    id="confirm-delete-song-button"
+                                    data-songId="<%= song.songId %>">Confirm</button>
+                        <% } %>
+                    </td>
+                    <td>
+                        <button class="swm-button"
+                                id="fork-song-button"
+                                data-songId="<%= song.songId %>">Fork</button>
                     </td>
                 </tr>
             <% } %>
