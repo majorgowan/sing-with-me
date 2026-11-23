@@ -65,6 +65,26 @@ const SAMPLE_SOURCES = {
         },
         release: 0.4,
     },
+    guitar_acoustic: {
+        baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/guitar-acoustic/",
+        notes: {
+                          40: "E2.mp3", 43: "G2.mp3", 45: "A2.mp3",
+            48: "C3.mp3", 52: "E3.mp3", 55: "G3.mp3", 57: "A3.mp3",
+            60: "C4.mp3", 64: "E4.mp3", 67: "G4.mp3", 69: "A4.mp3",
+            72: "C5.mp3",
+        },
+        release: 0.6,
+    },
+    guitar_nylon: {
+        baseUrl: "https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/guitar-nylon/",
+        notes: {
+                           40: "E2.mp3", 42: "Fs2.mp3", 44: "Gs2.mp3", 45: "A2.mp3",
+            49: "Cs3.mp3", 52: "E3.mp3", 54: "Fs3.mp3",                57: "A3.mp3",
+            61: "Cs4.mp3", 64: "E4.mp3", 66: "Fs4.mp3",                69: "A4.mp3",
+            73: "Cs5.mp3",
+        },
+        release: 0.3,
+    },
     // add more instruments here...
 };
 
@@ -120,7 +140,7 @@ export const makeWaveSurfer = (songTrack, blobUrl) => {
 
     const wavesurfer = WaveSurfer.create({
         "container": songTrack.querySelector(".waveform-track"),
-        "sampleRate": 44100,
+        // "sampleRate": 44100,
         "waveColor": "darkgreen",
         "progressColor": "olive",
         "barWidth": 2,
@@ -165,7 +185,39 @@ export const makeWaveSurfer = (songTrack, blobUrl) => {
 };
 
 
+export const detectMarkerSignal = (buffer) => {
+    // Find the 10 kHz marker in the recording
+    const data = buffer.getChannelData(0);
+
+    console.log(data);
+
+    // Go through the first 1 second, look for a burst of energy at 10 kHz
+    const startIdx = 0; // Math.floor(0.4 * buffer.sampleRate);
+    const endIdx = buffer.sampleRate; // Math.floor(0.6 * buffer.sampleRate);
+    let markerIdx = 0;
+    let peakVal = 0;
+    for (let i = startIdx; i < endIdx; i++) {
+        if (Math.abs(data[i]) > peakVal) {
+            peakVal = Math.abs(data[i]);
+            // console.log("Found a biggie ... ", i, data[i]);
+            markerIdx = i;
+        }
+    }
+
+    console.log(markerIdx, `${markerIdx / buffer.sampleRate}`, `lag: ${markerIdx / buffer.sampleRate - 0.5} s`);
+
+    // The marker was injected at 0.5 s, but it appears at markerIdx/sampleRate
+    // The difference is the dest→file latency
+    const destToFileOffset = (markerIdx / buffer.sampleRate) - 0.5;
+    return destToFileOffset;
+};
+
+
 export const makeRecorder = async (songTrack) => {
+
+    // TODO: (MAJOR) The recording is lagging the existing tracks.  AI says:
+    //       For a music recording app where sync matters, the automated probe is the right answer.
+    //       It's what openDAW ships, and it's the only approach that's both automatic and accurate across devices.
 
     // 0. Create a new WaveSurfer object
     const wavesurfer = WaveSurfer.create({
@@ -182,15 +234,17 @@ export const makeRecorder = async (songTrack) => {
 
     const stream = await navigator.mediaDevices.getUserMedia({
         "audio": {
-            "sampleRate": 44100,
-            "echoCancellation": true,
+            // "sampleRate": 44100,
+            "echoCancellation": false,
             "noiseSuppression": true,
             "autoGainControl": false
         }
     });
 
     // audio context for real-time processing and visualizing
-    const audioCtx = new AudioContext();
+    const audioCtx = new AudioContext({
+        "latencyHint": "playback"
+    });
     const source = audioCtx.createMediaStreamSource(stream);
     const gain = audioCtx.createGain();
     const dest = audioCtx.createMediaStreamDestination();
@@ -234,6 +288,10 @@ export const makeRecorder = async (songTrack) => {
             const container = songTrack.querySelector('.waveform-track');
             container.style.width = `${wavesurfer.getDuration() * MINPXPERSEC * 1.01 + 2}px`;
             songTrack.closest("song-div").updateTimeline();
+
+            // detect the inserted marker at 500 ms
+            const audioBuffer = wavesurfer.getDecodedData();
+            detectMarkerSignal(audioBuffer);
         });
 
         // 4. Fire your "record-end" logic
@@ -248,13 +306,16 @@ export const makeRecorder = async (songTrack) => {
     const canvas = songTrack.querySelector(".recording-visualizer-canvas");
     const ctx2d = canvas.getContext("2d");
     let rafId;   // frame ID for visualizer (needed to cancel recursive loop in stop())
+    let frame = 0;
 
     const drawVisualizer = () => {
+        rafId = requestAnimationFrame(drawVisualizer);
+        if (++frame % 2 === 0) return; // draw only every other frame (~30 fps)
+
         // analyser.getByteTimeDomainData(dataArray);   // draw a wave representation of instantaneous signal
         analyser.getByteFrequencyData(dataArray);       // draw frequency spectrum
 
         ctx2d.clearRect(0, 0, canvas.width, canvas.height);
-
 
         const START = 20;
         const END = Math.min(100, dataArray.length - 1);
@@ -275,14 +336,11 @@ export const makeRecorder = async (songTrack) => {
                 barHeight
             );
         }
-
-        rafId = requestAnimationFrame(drawVisualizer);
     };
-
 
     // --- Handle ---
     return {
-        start() {
+        async start() {
             console.log("STARTING RECORDER. . . ");
 
             if (audioCtx.state === "suspended") audioCtx.resume();
@@ -291,6 +349,19 @@ export const makeRecorder = async (songTrack) => {
             gain.gain.setValueAtTime(0, audioCtx.currentTime);
             gain.gain.linearRampToValueAtTime(1, audioCtx.currentTime + 0.05);
             mediaRecorder.start(200);
+
+            // schedule injection of marker signal to correct lag in post
+            // should happen at 500 ms
+            const markerTime = audioCtx.currentTime + 0.5; // 500 ms into the recording
+            const osc = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            osc.frequency.value = 1000; // 10 kHz — above musical range, won't clash
+            g.gain.setValueAtTime(0.5, markerTime);
+            g.gain.setValueAtTime(0, markerTime + 0.2);
+            osc.connect(g).connect(dest);
+            osc.start(markerTime);
+            osc.stop(markerTime + 0.2);
+
             // start visualizing
             canvas.classList.remove("invisible-div");
             drawVisualizer();
@@ -565,6 +636,22 @@ function clearSection(channelData, startSection, endSection, numChannels) {
 }
 
 
+function shiftBuffer(shift, channelData) {
+    const newLength = channelData[0].length + shift;
+    return channelData.map(channel => {
+        const out = new Float32Array(newLength); // already zero-filled
+        if (shift > 0) {
+            out.set(channel.subarray(0, newLength - shift), shift);
+        } else if (shift < 0) {
+            out.set(channel.subarray(-shift));
+        } else {
+            out.set(channel);
+        }
+        return out;
+    });
+}
+
+
 function loopSection(channelData, startSection, endSection, numChannels) {
     // extend if loop extends out of length of array
     if (2 * endSection - startSection > channelData[0].length) {
@@ -599,14 +686,16 @@ export const editTrack = async (songTrack, start, end, operation) => {
     let channelData = Array.from({ length: audioBuffer.numberOfChannels },
         (_, i) => audioBuffer.getChannelData(i));
 
-    console.log(channelData);
+    // console.log(channelData);
 
-    let startClip = Math.floor(start * channelData[0].length);
-    let endClip = Math.floor(end * channelData[0].length);
     if (operation === "clear") {
+        let startClip = Math.floor(start * channelData[0].length);
+        let endClip = Math.floor(end * channelData[0].length);
         clearSection(channelData, startClip, endClip, audioBuffer.numberOfChannels);
         songTrack.setModified();
     } else if (operation === "loop") {
+        let startClip = Math.floor(start * channelData[0].length);
+        let endClip = Math.floor(end * channelData[0].length);
         channelData = loopSection(channelData, startClip, endClip, audioBuffer.numberOfChannels);
         // shift the selection and correct percentages
         const tempStartClip = startClip;
@@ -618,6 +707,9 @@ export const editTrack = async (songTrack, start, end, operation) => {
         console.log(songTrack.selectStartPct, songTrack.selectEndPct);
         songTrack.setModified();
         songTrack.setSelection();
+    } else if (operation === "shift") {
+        const shiftBy = Math.floor(start * audioBuffer.sampleRate);
+        channelData = shiftBuffer(shiftBy, channelData);
     }
 
     const bytes = await encode.webm(channelData, {
@@ -657,6 +749,112 @@ export const editTrack = async (songTrack, start, end, operation) => {
     // const url = URL.createObjectURL(blob)
     // wavesurfer.load(url)
     //
+
+};
+
+
+async function chordsToBlob(chordChanges, bpm, pattern, instrument) {
+
+    const strum = (synth, time, notes, direction) => {
+        const gap = 0.025; // 20 ms between strings
+        const n = notes.length;
+        const notes0 = (direction === "down") ? notes : [...notes].reverse();
+
+        notes0.forEach((midi, i) => {
+
+            const baseVelocity = direction === "down"
+                ? 1.0 - (i / (n - 1)) * 0.7
+                : 0.4 + (i / (n - 1)) * 0.7;
+
+            const velocity = Math.max(0.1, Math.min(1.0, baseVelocity + (Math.random() - 0.5) * 0.15));
+
+            synth.triggerAttackRelease(
+                Tone.Frequency(midi, "midi"),
+                1,
+                time + (i + Math.random() * 0.1) * gap,
+                velocity);
+        });
+    };
+
+    const buffers = (instrument !== "synth")
+        ? await ensureBuffers(instrument)
+        : null;
+
+    const release = SAMPLE_SOURCES[instrument]?.release ?? 0.5;
+
+    const totalDuration = 20;
+
+    const chords = [
+        [[ 48, 52, 55, 60, 64], "down", 1],
+        [[ 48, 52, 55, 60, 64], "down", 2],
+        [[ 48, 52, 55, 60, 64], "up", 2.5],
+        [[ 48, 52, 55, 60, 64], "down", 3],
+        [[ 48, 52, 55, 60, 64], "up", 3.5],
+        [[ 48, 52, 55, 60, 64], "down", 4],
+
+        [[ 48, 52, 55, 60, 64], "down", 5],
+        [[ 48, 52, 55, 60, 64], "down", 6],
+        [[ 48, 52, 55, 60, 64], "up", 6.5],
+        [[ 48, 52, 55, 60, 64], "down", 7],
+        [[ 48, 52, 55, 60, 64], "up", 7.5],
+        [[ 48, 52, 55, 60, 64], "down", 8],
+
+        [[ 48, 52, 55, 60, 64], "down", 9],
+        [[ 48, 52, 55, 60, 64], "down", 10],
+        [[ 48, 52, 55, 60, 64], "up", 10.5],
+        [[ 48, 52, 55, 60, 64], "down", 11],
+        [[ 48, 52, 55, 60, 64], "up", 11.5],
+        [[ 48, 52, 55, 60, 64], "down", 12],
+
+        [[ 48, 52, 55, 60, 64], "down", 13],
+        [[ 48, 52, 55, 60, 64], "down", 14],
+        [[ 48, 52, 55, 60, 64], "up", 14.5],
+        [[ 48, 52, 55, 60, 64], "down", 15],
+        [[ 48, 52, 55, 60, 64], "up", 15.5],
+        [[ 48, 52, 55, 60, 64], "down", 16],
+    ];
+
+    // use Tone.js to build audio buffer out of chords, onsets, durations
+    const buffer = await Tone.Offline(({ transport }) => {
+
+        const synth = (instrument === "synth")
+            ? new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "fatsawtooth" },
+                envelope: { attack: 0.01, decay: 0.2, sustain: 0.5, release: 1 },
+            }).toDestination()
+            : new Tone.Sampler(buffers, { release }).toDestination();
+
+        transport.bpm.value = bpm || 100;
+
+        chords.forEach((chord, i) => {
+            transport.schedule((t) => strum(synth, t, chord[0], chord[1]), chord[2]);
+        });
+
+        transport.start(0);
+
+    }, totalDuration);
+
+    // create audioBlob from the audioBuffer
+    const audioBuffer = buffer.get(); // native AudioBuffer
+    const channelData = audioBuffer.getChannelData(0); // Float32Array
+
+    const bytes = await encode.webm(channelData, {
+        sampleRate: audioBuffer.sampleRate
+    });
+
+    const blob = new Blob([bytes], { type: "audio/webm" });
+    const url = URL.createObjectURL(blob);
+
+    return url;
+
+}
+
+
+export const midifyChords = async (chords, instrument) => {
+
+    const url = await chordsToBlob(chords, 100, null, instrument);
+
+    return url;
 
 };
 

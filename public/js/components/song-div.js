@@ -1,6 +1,7 @@
 import {
     mixTracks,
-    encodeBufferToBlob
+    encodeBufferToBlob,
+    midifyChords, midifyTrack
 } from "../utils.js";
 
 
@@ -92,6 +93,27 @@ class Song extends HTMLElement {
                 el.setAttribute("saved", "false");
                 // add this track to the DOM
                 addNewTrackDiv.prepend(el); // your track container
+            } else if (e.target.closest(".add-chords-track-button")) {
+                e.preventDefault();
+                console.log(e.target.dataset.username);
+
+                const chordsBlobUrl = await midifyChords(null, "guitar_acoustic");
+
+                const userName = e.target.dataset.username;
+                const addNewTrackDiv = this.querySelector(".add-new-track-div");
+                const timeStamp = `${Date.now()}`;
+                // create new song track (SongTrack object) and add it to the DOM
+                const el = document.createElement("song-track");
+                el.setAttribute("trackId", timeStamp);
+                el.setAttribute("filename", `${userName}-chords-${timeStamp}.webm`);
+                el.setAttribute("blobUrl", chordsBlobUrl);
+                el.setAttribute("title", "New chords track");
+                el.setAttribute("description", "");
+                el.setAttribute("created-by", userName);
+                el.setAttribute("saved", "false");
+                // add this track to the DOM
+                addNewTrackDiv.prepend(el); // your track container
+
             } else if (e.target.closest(".save-song-button")) {
                 e.preventDefault();
 

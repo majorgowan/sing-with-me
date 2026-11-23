@@ -57,7 +57,7 @@ class SongTrack extends HTMLElement {
                     <div class="waveform-range-select hidden-div"></div>
                 </div>
                 <div class="track-edit-div hidden-div">
-                    <div>
+                    <div class="track-edit-range-div hidden-div">
                         <div class="select-time-range">
                             <input type="text" inputmode="decimal" pattern="\\d*\\.?\\d*"
                                    maxlength="6" class="select-time-input select-time-start">
@@ -67,9 +67,20 @@ class SongTrack extends HTMLElement {
                             s
                         </div>
                     </div>
-                    <button class="swm-button clear-button">Clear</button>
-                    <!-- <button class="swm-button copy-button">Copy</button> -->
-                    <button class="swm-button loop-button">Loop</button>
+                    <div class="track-edit-number-div hidden-div">
+                        <div class="select-number">
+                            <input type="text" inputmode="decimal" pattern="-?\\d*\\.?\\d*"
+                                   value="  0" maxlength="6" class="select-time-input shift-time">
+                            s
+                        </div>
+                        <button class="swm-button swm-mini-button apply-shift-button">Apply</button>
+                    </div>
+                    <div class="track-edit-buttons">
+                        <button class="swm-button swm-mini-button clear-button">Clear</button>
+                        <button class="swm-button swm-mini-button copy-button">Copy</button>
+                        <button class="swm-button swm-mini-button loop-button">Loop</button>
+                        <button class="swm-button swm-mini-button shift-button">Shift</button>
+                    </div>
                 </div>
                 <div class="track-detail">
                     <button class="move-grab-button">&parallel;</button>
@@ -114,8 +125,10 @@ class SongTrack extends HTMLElement {
                                 <button data-instrument="piano">🎹 Piano</button>
                                 <button data-instrument="violin">🎻 Violin</button>
                                 <button data-instrument="cello">🎻 Cello</button>
+                                <button data-instrument="guitar_acoustic">🎸 Acoustic Guitar</button>
                                 <button data-instrument="flute">🪈 Flute</button>
                                 <button data-instrument="saxophone">🎷 Sax</button>
+                                <button data-instrument="guitar_nylon">🎸 Nylon Guitar</button>
                                 <button data-instrument="synth">🎹 Synth</button>
                             </div>
                             <button class="swm-button ai-track-button" type="button">AI</button>
@@ -213,6 +226,11 @@ class SongTrack extends HTMLElement {
     setSelection(clear) {
         const rangeSelectDiv = this.querySelector(".waveform-range-select");
         const waveformTrack = this.querySelector(".waveform-track");
+        const trackEditRangeDiv = this.querySelector(".track-edit-range-div");
+
+        // hide shift input in any case
+        const trackEditNumberDiv = this.querySelector(".track-edit-number-div");
+        trackEditNumberDiv.classList.add("hidden-div");
 
         if (clear) {
             this.selectStartPct = null;
@@ -220,11 +238,13 @@ class SongTrack extends HTMLElement {
             rangeSelectDiv.classList.add("hidden-div");
             rangeSelectDiv.style.left = 0;
             rangeSelectDiv.style.width = 0;
-            this.toggleEditDiv("hide");
+            trackEditRangeDiv.classList.add("hidden-div");
+            // this.toggleEditDiv("hide");
         } else {
             rangeSelectDiv.classList.remove("hidden-div");
             rangeSelectDiv.style.left = this.selectStartPct * parseFloat(waveformTrack.style.width) + "px";
             rangeSelectDiv.style.width = (this.selectEndPct - this.selectStartPct) * parseFloat(waveformTrack.style.width) + "px";
+            trackEditRangeDiv.classList.remove("hidden-div");
         }
     }
 
@@ -233,6 +253,8 @@ class SongTrack extends HTMLElement {
             this.querySelector(".track-edit-div").classList.remove("hidden-div");
         } else if (mode === "hide") {
             this.querySelector(".track-edit-div").classList.add("hidden-div");
+        } else {
+            this.querySelector(".track-edit-div").classList.toggle("hidden-div");
         }
     }
 
@@ -277,8 +299,17 @@ class SongTrack extends HTMLElement {
     }
 
     async midify() {
-        const audioBuffer = this.wavesurfer.getDecodedData();
+
+        // get the channel data from the blob at the sampleRate required by Essentia
+        const ctx = new AudioContext({ sampleRate: 44100 });
+        const audioBuffer = await ctx.decodeAudioData(await this.recordedBlob.arrayBuffer());
+        ctx.close();
         const channelData = audioBuffer.getChannelData(0);
+
+        // get channel data from the wavesurfer object (might be wrong sampleRate for essentia)
+        // const audioBuffer = this.wavesurfer.getDecodedData();
+        // const channelData = audioBuffer.getChannelData(0);
+
         const myRhythm = await analyzeRhythm(channelData, (value) => {
             console.log(`progress: ${value}`)
         });
@@ -482,10 +513,19 @@ class SongTrack extends HTMLElement {
                 this.remove();
             } else if (e.target.closest(".loop-button")) {
                 e.preventDefault();
-                editTrack(this, this.selectStartPct, this.selectEndPct, "loop");
+                await editTrack(this, this.selectStartPct, this.selectEndPct, "loop");
             } else if (e.target.closest(".clear-button")) {
                 e.preventDefault();
-                editTrack(this, this.selectStartPct, this.selectEndPct, "clear");
+                await editTrack(this, this.selectStartPct, this.selectEndPct, "clear");
+            } else if (e.target.closest(".shift-button")) {
+                e.preventDefault();
+                const trackEditNumberDiv = this.querySelector(".track-edit-number-div");
+                trackEditNumberDiv.classList.remove("hidden-div");
+            } else if (e.target.closest(".apply-shift-button")) {
+                e.preventDefault();
+                const shift = parseFloat(this.querySelector(".shift-time").value);
+                console.log(`You want to shift by ${shift} seconds, really??`);
+                await editTrack(this, shift, null, "shift");
             }
         });
         this.addEventListener("pointerdown", (e) => {
@@ -518,15 +558,15 @@ class SongTrack extends HTMLElement {
                     // show edit div:
                     this.toggleEditDiv("show");
                 } else {
-                    // treat as a click: clear selection if any
+                    // treat as a click: clear selection if any, toggle edit menu
                     e.preventDefault();
                     this.setSelection(true);
                     selectLeft = null;
                     selectRight = null;
                     this.selectStartPct = null;
                     this.selectEndPct = null;
-                    // hide edit div:
-                    this.toggleEditDiv("hide");
+                    // toggle edit div:
+                    this.toggleEditDiv();
                 }
             }
         });
@@ -641,6 +681,7 @@ class NewTrack extends SongTrack {
             if (e.code === "Space") {
                 e.preventDefault(); // stop page scroll
                 clearInterval(this._countDown);
+                this.recorder.stop();
                 stopRecording();
             }
         };

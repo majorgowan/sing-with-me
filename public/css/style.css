@@ -133,6 +133,10 @@ header {
     filter: brightness(1.1); /* < 1 = darker, > 1 = lighter */
     cursor: pointer;
 }
+.swm-mini-button {
+    font-size: x-small;
+    margin: 2px;
+}
 .mute-checkbox-label {
     position: absolute;
     bottom: 10px;
@@ -213,6 +217,16 @@ header {
     background-color: aliceblue;
     border-radius: 15px;
 }
+.track-edit-number-div {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+.track-edit-buttons {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
 .track-buttons-div {
     position: relative;
     width: fit-content;
@@ -276,8 +290,9 @@ header {
 .select-time-input {
     border: none;
     background: none;
+    font-size: small;
     width: 33%;
-    max-width: 33%;
+    max-width: 40%;
     padding: 0;
 }
 .select-time-start {
