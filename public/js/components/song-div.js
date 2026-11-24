@@ -1,7 +1,8 @@
 import {
     mixTracks,
     encodeBufferToBlob,
-    midifyChords, midifyTrack
+    midifyChords,
+    deleteAudioFromS3,
 } from "../utils.js";
 
 
@@ -122,6 +123,12 @@ class Song extends HTMLElement {
                     if (track.modified) {
                         await track.saveTrack();
                     }
+                    if (track.markedForDeletion) {
+                        // delete any tracks marked for deletion from S3
+                        await deleteAudioFromS3(track.getAttribute("filename"));
+                        // remove the track after deleting audio
+                        track.remove();
+                    }
                 }
 
                 const songInfo = this.getSongData(true);
@@ -148,7 +155,13 @@ class Song extends HTMLElement {
                 if (data.songId) {
                     this.setAttribute("song-id", data.songId);
                     console.log("updated song id", data.songId);
+
+                    // update the url to include song-id
+                    const url = new URL(window.location.href);
+                    url.searchParams.set("songId", data.songId);
+                    window.history.replaceState(null, "", url);
                 }
+
             } else if (e.target.closest(".download-song-button")) {
 
                 const songTracksToMix = Array.from(this.tracks).filter(songTrack => !songTrack.isMuted());

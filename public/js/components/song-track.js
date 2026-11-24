@@ -1,12 +1,12 @@
 import {
     loadAudioBlob,
     uploadAudioToS3,
-    deleteAudioFromS3,
     makeWaveSurfer,
     makeRecorder,
     editTrack,
     midifyTrack,
-    aiTrack
+    aiTrack,
+    encodeBlobToWebm
 } from "../utils.js";
 
 import {
@@ -37,6 +37,10 @@ class SongTrack extends HTMLElement {
     disconnectedCallback() {
         clearInterval(this._countDown);
         clearTimeout(this._confirmTimeout);
+    }
+
+    hide() {
+        this.querySelector(".track-div").classList.add("hidden-track");
     }
 
     render() {
@@ -268,7 +272,7 @@ class SongTrack extends HTMLElement {
     }
 
     playTrack(volume, withDelay) {
-        if (this.hasAudio() && !this.isMuted()) {
+        if (this.hasAudio() && !this.isMuted() && !this.markedForDeletion) {
             if (volume) {
                 this.wavesurfer.setVolume(volume);
             }
@@ -292,6 +296,9 @@ class SongTrack extends HTMLElement {
     }
 
     async saveTrack() {
+        // (re)encode blob as webm for saving to S3
+        await encodeBlobToWebm(this);
+
         await uploadAudioToS3(this.recordedBlob, this.getAttribute("filename"));
         this.setAttribute("saved", "true");
         // unset modified
@@ -507,10 +514,15 @@ class SongTrack extends HTMLElement {
             } else if (e.target.closest(".confirm-delete-track-button")) {
                 e.preventDefault();
                 if (this.getAttribute("saved") === "true") {
-                    await deleteAudioFromS3(this.getAttribute("filename"));
+                    // mark for deletion and only delete on song save
+                    this.markedForDeletion = true;
+                    // await deleteAudioFromS3(this.getAttribute("filename"));
+                    // hide it from view but don't remove it so clean up can delete it on song save
+                    this.hide();
+                } else {
+                    // not saved, so just remove it
+                    this.remove();
                 }
-                // remove the track from the Song
-                this.remove();
             } else if (e.target.closest(".loop-button")) {
                 e.preventDefault();
                 await editTrack(this, this.selectStartPct, this.selectEndPct, "loop");

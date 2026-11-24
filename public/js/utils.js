@@ -189,7 +189,7 @@ export const detectMarkerSignal = (buffer) => {
     // Find the 10 kHz marker in the recording
     const data = buffer.getChannelData(0);
 
-    console.log(data);
+    // console.log(data);
 
     // Go through the first 1 second, look for a burst of energy at 10 kHz
     const startIdx = 0; // Math.floor(0.4 * buffer.sampleRate);
@@ -400,66 +400,6 @@ export const makeRecorder = async (songTrack) => {
 };
 
 
-// export const makeWaveRecorder = async (newTrack, recorder) => {
-//     if (recorder) {
-//         // destroy() automatically calls stopRecording() and stopMic() internally
-//         try {
-//             recorder.destroy();
-//         } catch (e) {
-//             console.error(e);
-//         }
-//         recorder = null;
-//     }
-//
-//     // Create a new Wavesurfer instance
-//     const newRecorder = WaveSurfer.create({
-//         "container": newTrack.querySelector(".waveform-track"),
-//         "sampleRate": 44100,
-//         "waveColor": "darkgreen",
-//         "progressColor": "olive",
-//         "barWidth": 2,
-//         "barRadius": 4,
-//         "interact": false,
-//         "normalize": true,
-//         "fillParent": false,
-//         "minPxPerSec": MINPXPERSEC,
-//         "plugins": [
-//             RecordPlugin.create({
-//                 scrollingWaveform: true, // Optional: scroll waveform while recording
-//                 renderRecordedAudio: true // Optional: render final audio after stop
-//             }),
-//             // TimelinePlugin.create()
-//         ]
-//     });
-//
-//     newRecorder.plugins[0].on("record-end", (blob) => {
-//         console.log("finished recording");
-//         const recButton = newTrack.querySelector(".save-recording-button");
-//         if (recButton) recButton.disabled = false;
-//         newTrack.recordedBlob = blob;
-//
-//         const trackDetailButtons = newTrack.querySelector(".track-detail-buttons");
-//         trackDetailButtons.classList.remove("hidden-div");
-//         const muteLabel = newTrack.querySelector(".mute-checkbox-label");
-//         muteLabel.classList.remove("hidden-label");
-//     });
-//
-//     newRecorder.on("ready", () => {
-//         newTrack.setDuration(newRecorder.getDuration());
-//         // set width of containing div proportional to duration
-//         const container =  newTrack.querySelector(".waveform-track");
-//         container.style.width = `${newRecorder.getDuration() * MINPXPERSEC * 1.01 + 2}px`;
-//         newTrack.closest("song-div").updateTimeline();
-//     });
-//
-//     // newRecorder.on("timeupdate", (t) => {
-//     //     songTrack.closest("song-div").syncTimeline(t);
-//     // });
-//
-//     return newRecorder;
-// };
-
-
 export const deleteAudioFromS3 = async (fileName) => {
     const urlResponse = await fetch(`/s3/delete-url?fileName=${encodeURIComponent(fileName)}`, {
         method: "GET",
@@ -525,6 +465,21 @@ export const uploadAudioToS3 = async (audioBlob, fileName) => {
 };
 
 
+export const encodeBlobToWebm = async (songTrack) => {
+    const audioBuffer = songTrack.wavesurfer.getDecodedData();
+    const channelData = Array.from({ length: audioBuffer.numberOfChannels },
+        (_, i) => audioBuffer.getChannelData(i));
+
+    const bytes = await encode.webm(channelData, {
+        sampleRate: audioBuffer.sampleRate,
+        // optional: bitrate, etc.
+    });
+
+    const blob = new Blob([bytes], { type: "audio/webm" });
+    songTrack.recordedBlob = blob;
+};
+
+
 export const loadAudioBlob = async (fileName) => {
     // 1. Request the presigned playback URL from your Express server
     const response = await fetch(`/s3/playback-url?key=${encodeURIComponent(fileName)}`, {
@@ -573,16 +528,64 @@ export const encodeBufferToBlob = async (buffer, format) => {
         "bitrate": 128
     };
 
-    const bytes = format === "mp3"
-        ? await encode.mp3(channelData, options)
-        : await encode.webm(channelData, options);
+    if (format === "wav") {
 
-    const blob = new Blob([bytes], {
-        type: format === "mp3" ? encode.mime.mp3 : encode.mime.webm
-    });
+        const blob = await encodeChannelDataToWavBlob(channelData, buffer.sampleRate);
 
-    return URL.createObjectURL(blob);
+        return URL.createObjectURL(blob);
+
+    } else {
+
+        const bytes = format === "mp3"
+            ? await encode.mp3(channelData, options)
+            : await encode.webm(channelData, options);
+
+        const blob = new Blob([bytes], {
+            type: format === "mp3" ? encode.mime.mp3 : encode.mime.webm
+        });
+
+        return URL.createObjectURL(blob);
+    }
 };
+
+
+function encodeChannelDataToWavBlob(channelData, sampleRate) {
+    const numCh = channelData.length;
+    const len = channelData[0].length;
+    const bytesPerSample = 2; // 16-bit
+    const blockAlign = numCh * bytesPerSample;
+    const dataSize = len * blockAlign;
+    const buf = new ArrayBuffer(44 + dataSize);
+    const v = new DataView(buf);
+
+    // RIFF header
+    const writeStr = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    writeStr(0, 'RIFF');
+    v.setUint32(4, 36 + dataSize, true);
+    writeStr(8, 'WAVE');
+    writeStr(12, 'fmt ');
+    v.setUint32(16, 16, true);           // fmt chunk size
+    v.setUint16(20, 1, true);            // PCM
+    v.setUint16(22, numCh, true);
+    v.setUint32(24, sampleRate, true);
+    v.setUint32(28, sampleRate * blockAlign, true);
+    v.setUint16(32, blockAlign, true);
+    v.setUint16(34, 16, true);           // bits per sample
+    writeStr(36, 'data');
+    v.setUint32(40, dataSize, true);
+
+    // Interleave channels as 16-bit PCM
+    let off = 44;
+    for (let i = 0; i < len; i++) {
+        for (let c = 0; c < numCh; c++) {
+            const s = Math.max(-1, Math.min(1, channelData[c][i]));
+            v.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            off += 2;
+        }
+    }
+
+    return new Blob([buf], { type: "audio/wav" });
+}
 
 
 export const mixTracks = async (songTracks) => {
@@ -712,18 +715,31 @@ export const editTrack = async (songTrack, start, end, operation) => {
         channelData = shiftBuffer(shiftBy, channelData);
     }
 
-    const bytes = await encode.webm(channelData, {
-        sampleRate: audioBuffer.sampleRate
-    });
-
-    // TODO: don't reencode the blob here (very slow), rather just edit the in-memory buffer
+    // TODO: don't reencode the blob here as WebM (very slow), rather just edit the in-memory buffer
     //       and have wavesurfer rerender the display;
     //       generate the blob and URL only when saving the track to S3
 
-    const blob = new Blob([bytes], { type: "audio/webm" });
+    // const bytes = await encode.webm(channelData, {
+    //     sampleRate: audioBuffer.sampleRate
+    // });
+    //
+    // const blob = new Blob([bytes], { type: "audio/webm" });
+    // const url = URL.createObjectURL(blob);
+    //
+    // songTrack.wavesurfer.load(url);
+
+    // Actually don't do anything different except use WAV instead of webm
+    // for "in-memory" editing
+
+    const blob = encodeChannelDataToWavBlob(channelData, audioBuffer.sampleRate);
     const url = URL.createObjectURL(blob);
 
-    songTrack.wavesurfer.load(url);
+    // Revoke the old URL
+    const oldUrl = songTrack.wavesurfer.getMediaElement().src;
+    if (oldUrl.startsWith("blob:")) URL.revokeObjectURL(oldUrl);
+
+    const newDuration = channelData[0].length / audioBuffer.sampleRate;
+    await songTrack.wavesurfer.load(url, channelData, newDuration);
 
     // TODO: do this sort of thing:
     //
@@ -836,17 +852,21 @@ async function chordsToBlob(chordChanges, bpm, pattern, instrument) {
 
     // create audioBlob from the audioBuffer
     const audioBuffer = buffer.get(); // native AudioBuffer
-    const channelData = audioBuffer.getChannelData(0); // Float32Array
 
-    const bytes = await encode.webm(channelData, {
-        sampleRate: audioBuffer.sampleRate
-    });
-
-    const blob = new Blob([bytes], { type: "audio/webm" });
-    const url = URL.createObjectURL(blob);
-
+    const url = encodeBufferToBlob(audioBuffer, "wav");
     return url;
 
+    // const channelData = audioBuffer.getChannelData(0); // Float32Array
+    //
+    // const bytes = await encode.webm(channelData, {
+    //     sampleRate: audioBuffer.sampleRate
+    // });
+    //
+    // const blob = new Blob([bytes], { type: "audio/webm" });
+    // const url = URL.createObjectURL(blob);
+    //
+    // return url;
+    //
 }
 
 
@@ -897,17 +917,21 @@ async function midiToBlob(midiData, instrument) {
 
     // create audioBlob from the audioBuffer
     const audioBuffer = buffer.get(); // native AudioBuffer
-    const channelData = audioBuffer.getChannelData(0); // Float32Array
 
-    const bytes = await encode.webm(channelData, {
-        sampleRate: audioBuffer.sampleRate
-    });
-
-    const blob = new Blob([bytes], { type: "audio/webm" });
-    const url = URL.createObjectURL(blob);
-
+    const url = encodeBufferToBlob(audioBuffer, "wav");
     return url;
 
+    // const channelData = audioBuffer.getChannelData(0); // Float32Array
+    //
+    // const bytes = await encode.webm(channelData, {
+    //     sampleRate: audioBuffer.sampleRate
+    // });
+    //
+    // const blob = new Blob([bytes], { type: "audio/webm" });
+    // const url = URL.createObjectURL(blob);
+    //
+    // return url;
+    //
 }
 
 

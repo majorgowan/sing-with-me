@@ -312,6 +312,9 @@ song-track, new-track {
     margin-top: 5px;
     margin-bottom: 5px;
 }
+.hidden-track {
+    display: none;
+}
 
 .record-overlay {
     position: fixed;
