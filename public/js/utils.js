@@ -281,7 +281,7 @@ export const makeRecorder = async (songTrack) => {
         // 3. Render the final waveform in WaveSurfer
         wavesurfer.load(URL.createObjectURL(blob)); // ← just load new audio
 
-        wavesurfer.on("ready", () => {
+        wavesurfer.once("ready", () => {
             console.log("WAVE FORM READY TO ROCK & ROLL!!!!");
             songTrack.wavesurfer = wavesurfer;
             songTrack.setDuration(wavesurfer.getDuration());

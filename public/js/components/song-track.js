@@ -106,7 +106,9 @@ class SongTrack extends HTMLElement {
                         <button class="swm-button dots-button">&#x22EE;</button>
                         <div class="dots-menu">
                             <button class="duplicate-button">Duplicate</button>
+                            <!--
                             <button class="save-track-button ${!this.modified ? 'hidden-menu-button' : ''}">Save</button>
+                            -->
                             <button class="rename-track-button ${!isOwner ? 'hidden-menu-button' : ''}">Rename</button>
                             <button class="delete-track-button ${!isOwner ? 'hidden-menu-button' : ''}">Delete</button>
                             <button class="confirm-delete-track-button hidden-menu-button">Confirm</button>
@@ -219,11 +221,11 @@ class SongTrack extends HTMLElement {
         if (unset) {
             this.modified = false;
             this.querySelector(".modified-div").classList.add("hidden-div");
-            this.querySelector(".save-track-button").classList.add("hidden-menu-button");
+            // this.querySelector(".save-track-button").classList.add("hidden-menu-button");
         } else {
             this.modified = true;
             this.querySelector(".modified-div").classList.remove("hidden-div");
-            this.querySelector(".save-track-button").classList.remove("hidden-menu-button");
+            // this.querySelector(".save-track-button").classList.remove("hidden-menu-button");
         }
     }
 
@@ -495,10 +497,11 @@ class SongTrack extends HTMLElement {
                 // close the dots menu
                 dotsMenuWrap.classList.remove("open-menu");
             } else if (e.target.closest(".save-track-button")) {
-                e.preventDefault();
-                this.saveTrack();
-                // close the dots menu
-                dotsMenuWrap.classList.remove("open-menu");
+                // obsolete ... only save tracks on song save (otherwise messy with S3 storing orphan tracks)
+                // e.preventDefault();
+                // this.saveTrack();
+                // // close the dots menu
+                // dotsMenuWrap.classList.remove("open-menu");
             } else if (e.target.closest(".delete-track-button")) {
                 e.preventDefault();
                 const deleteTrackButton = this.querySelector(".delete-track-button");
@@ -648,7 +651,7 @@ class NewTrack extends SongTrack {
     }
 
     async initWaveform() {
-        this.waveform = null;
+        this.wavesurfer = null;
         this.recorder = await makeRecorder(this);
     }
 
@@ -733,8 +736,9 @@ class NewTrack extends SongTrack {
                 this._countDown = setInterval(async () => {
                     counter++;
                     countDownDiv.innerHTML = `${baseText}<BR>${(counter - 1) % beatsPerMeasure + 1}`;
-                    if (counter - 1 === beatsPerMeasure) {
-                        console.log("COUNT IN FINISHED!!!!");
+                    if (counter + 1 === beatsPerMeasure) {
+                        // start recording two beats before count finishes
+                        // (expecting to zero-out the first second or so for calibration)
                         await this.recorder.start();
                         if (playOtherTracks) {
                             parentSong.tracks.forEach((track) => {
@@ -744,10 +748,12 @@ class NewTrack extends SongTrack {
                             });
                         }
                         this.setModified();
-                    } else if (counter - 1 > beatsPerMeasure) {
-                        countDownDiv.innerHTML = `<BR>${(counter - 1) % beatsPerMeasure + 1}`;
+                    } else if (counter === beatsPerMeasure) {
                         recordStopButton.disabled = false;
                         recordStopButtonDiv.classList.remove("invisible-div");
+                    }
+                    if (counter - 1 > beatsPerMeasure) {
+                        countDownDiv.innerHTML = `<BR>${(counter - 1) % beatsPerMeasure + 1}`;
                     }
                     if (counter > beatsPerMeasure && !((counter - 1) % beatsPerMeasure)) {
                         recordOverlay.classList.add("flash-div");

@@ -34,6 +34,9 @@ router.get("/songlist", async (req, res) => {
 
     console.log(songList);
 
+    // don't cache song list so that back-button will get up-to-date list every time
+    res.set("Cache-Control", "no-store");
+
     return res.render("songlist", {
         "csrfToken": req.csrfToken(),
         "username": req.session.username,
