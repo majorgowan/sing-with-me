@@ -316,19 +316,30 @@ song-track, new-track {
     display: none;
 }
 
-.record-overlay {
+#welcome-overlay {
+    font-weight: bold;
+    font-size: 5vmin;
+    padding: 10%;
+}
+#lets-go-button {
+    border-radius: 20px;
+    font-size: 10vmin;
+    padding: 4vmin;
+}
+.full-overlay {
     position: fixed;
     inset: 0;
     z-index: 1000;
     background: rgba(200, 160, 160, 0.9);
-    display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
+    display: flex;
+    flex-direction: column;
 }
-.record-overlay div {
+.full-overlay div {
     display: flex;
     justify-content: center;
+    text-align: center;
 }
 .recording-visualizer-canvas {
     width: 40%;

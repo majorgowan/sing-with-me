@@ -5,11 +5,21 @@
     <%- include("partials/head.ejs") %>
     <script type="module" src="/js/components/song-div.js"></script>
     <script type="module" src="/js/components/song-track.js"></script>
+    <script type="text/javascript" src="/js/song-utils.js"></script>
 </head>
 
 <body>
 
 <%- include("partials/header.ejs") %>
+
+<div id="welcome-overlay" class="full-overlay">
+    <div>
+            To get started bzw. contribute, click<BR>
+            "Add new track" and "Record".<BR><BR>
+            Headphones recommended!<BR><BR>
+    </div>
+    <button id="lets-go-button" class="swm-button">Let's Go!</button>
+</div>
 
 <song-div song-id="<%= song.songId %>"
           song-title="<%= song.title %>"
@@ -50,6 +60,12 @@
             </div>
         </div>
         <div class="song-head-row">
+            <div class="song-head-subrow">
+                <label>
+                    <input type="checkbox" name="metronome" class="metronome-checkbox" checked>
+                    Metronome
+                </label>
+            </div>
             <div class="song-head-subrow">
                 <label>
                     <input type="checkbox" name="play-record" class="play-record-checkbox" checked>

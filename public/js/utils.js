@@ -281,7 +281,7 @@ export const makeRecorder = async (songTrack) => {
         // 3. Render the final waveform in WaveSurfer
         wavesurfer.load(URL.createObjectURL(blob)); // ← just load new audio
 
-        wavesurfer.once("ready", () => {
+        wavesurfer.once("ready", async () => {
             console.log("WAVE FORM READY TO ROCK & ROLL!!!!");
             songTrack.wavesurfer = wavesurfer;
             songTrack.setDuration(wavesurfer.getDuration());
@@ -291,7 +291,14 @@ export const makeRecorder = async (songTrack) => {
 
             // detect the inserted marker at 500 ms
             const audioBuffer = wavesurfer.getDecodedData();
-            detectMarkerSignal(audioBuffer);
+            const detectedLag = detectMarkerSignal(audioBuffer);
+
+            // TODO: clear first 0.8 seconds, and shift track back by detected lag
+            //       first try using editTrack (twice) but eventually do in one custom operation
+            console.log(`clearing from 0 to 0.8 seconds (zwar ${80 / songTrack.duration} Prozent)`);
+            await editTrack(songTrack, 0, 0.8 / songTrack.duration, "clear");
+            console.log(`shifting by ${-1.0 * detectedLag} seconds`);
+            await editTrack(songTrack, -1.0 * detectedLag, null, "shift");
         });
 
         // 4. Fire your "record-end" logic
@@ -767,6 +774,52 @@ export const editTrack = async (songTrack, start, end, operation) => {
     //
 
 };
+
+
+export const createDrumLoop = (measureLength, bpm) => {
+    console.log(measureLength, bpm);
+    const transport = Tone.getTransport();
+
+    // clear existing drums
+    transport.cancel();
+
+    const kick = new Tone.MembraneSynth({
+        pitchDecay: 0.05,
+        octaves: 4,
+        envelope: { attack: 0.001, decay: 0.2, sustain: 0, release: 0.1 },
+        volume: -14,
+    }).toDestination();
+
+    const snare = new Tone.NoiseSynth({
+        noise: { type: "white" },
+        envelope: { attack: 0.002, decay: 0.15, sustain: 0, release: 0.1 },
+        volume: -12,
+    }).toDestination();
+
+    transport.bpm.value = bpm;
+
+    // kick sequence
+    new Tone.Sequence(time => {
+            kick.triggerAttackRelease("C1", "8n", time);
+        },
+        [null, ...Array(measureLength - 1).fill("x")],
+        "4n"
+    ).start(0);
+
+    // snare sequence
+    new Tone.Sequence(time => {
+            snare.triggerAttackRelease("8n", time);
+        },
+        ["x", ...Array(measureLength - 1).fill(null)],
+        "4n"
+    ).start(0);
+
+    return {
+        "start": () => transport.start("+0.1"),
+        "stop": () => transport.stop(),
+        "setBPM": (newBpm) => transport.bpm.value = newBpm,
+    };
+}
 
 
 async function chordsToBlob(chordChanges, bpm, pattern, instrument) {

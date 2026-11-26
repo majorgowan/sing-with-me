@@ -3,6 +3,7 @@ import {
     uploadAudioToS3,
     makeWaveSurfer,
     makeRecorder,
+    createDrumLoop,
     editTrack,
     midifyTrack,
     aiTrack,
@@ -640,7 +641,7 @@ class NewTrack extends SongTrack {
         // Add the extra bits a new track needs
         const trackDetail = this.querySelector(".track-detail");
         trackDetail.innerHTML += `
-            <div class="record-overlay hidden-div">
+            <div class="record-overlay full-overlay hidden-div">
                 <div class="count-down-div hidden-div"></div>
                 <canvas class="recording-visualizer-canvas invisible-div"></canvas>
                 <div class="record-stop-button-div invisible-div">
@@ -670,6 +671,8 @@ class NewTrack extends SongTrack {
     attachListeners() {
         super.attachListeners();
         let counter;
+        let metronome = null;
+        let playMetronome = null;
 
         // stop recording
         const stopRecording = () => {
@@ -697,6 +700,7 @@ class NewTrack extends SongTrack {
                 e.preventDefault(); // stop page scroll
                 clearInterval(this._countDown);
                 this.recorder.stop();
+                if (playMetronome) metronome.stop();
                 stopRecording();
             }
         };
@@ -729,10 +733,18 @@ class NewTrack extends SongTrack {
                 let beatsPerMeasure = parseInt(timeSignatureSelect.value);
                 const countDownDiv = this.querySelector(".count-down-div");
                 countDownDiv.classList.remove("hidden-div");
-                const tempo = 1000 * 60 / Math.floor(Math.abs(Number(bpmInput.value)));
+                const bpm = Math.abs(Number(bpmInput.value));
+                const tempo = 1000 * 60 / Math.floor(bpm);
                 // get ready message
                 const baseText = `Get ready (in ${beatsPerMeasure}) . . . `;
                 countDownDiv.innerHTML = `${baseText}<BR>&nbsp;`;
+
+                // prepare metronome
+                playMetronome = parentSong.querySelector(".metronome-checkbox");
+                if (playMetronome) {
+                    metronome = createDrumLoop(beatsPerMeasure, bpm);
+                }
+
                 this._countDown = setInterval(async () => {
                     counter++;
                     countDownDiv.innerHTML = `${baseText}<BR>${(counter - 1) % beatsPerMeasure + 1}`;
@@ -751,6 +763,11 @@ class NewTrack extends SongTrack {
                     } else if (counter === beatsPerMeasure) {
                         recordStopButton.disabled = false;
                         recordStopButtonDiv.classList.remove("invisible-div");
+                    } else if (counter - 1 === beatsPerMeasure) {
+                        // start metronome if selected
+                        if (playMetronome) {
+                            metronome.start();
+                        }
                     }
                     if (counter - 1 > beatsPerMeasure) {
                         countDownDiv.innerHTML = `<BR>${(counter - 1) % beatsPerMeasure + 1}`;
@@ -764,6 +781,7 @@ class NewTrack extends SongTrack {
             } else if (e.target.closest(".record-stop-button")) {
                 console.log("STOPPING RECORDING!!!!");
                 this.recorder.stop();
+                if (playMetronome) metronome.stop();
                 clearInterval(this._countDown);
                 stopRecording();
             }

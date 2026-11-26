@@ -133,6 +133,14 @@ class Song extends HTMLElement {
 
                 const songInfo = this.getSongData(true);
                 songInfo.modified = new Date();
+
+                if (!songInfo.title) {
+                    const userName = document.querySelector(".add-new-track-button").dataset.username;
+                    songInfo.title = `a new song by ${userName}`;
+                    // update the input accordingly
+                    const songTitleInput = this.querySelector(".song-title-input");
+                    songTitleInput.value = songInfo.title;
+                }
                 console.log(songInfo);
 
                 const requestBody = {"songInfo": songInfo};
