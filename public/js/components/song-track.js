@@ -676,6 +676,8 @@ class NewTrack extends SongTrack {
 
         // stop recording
         const stopRecording = () => {
+            const playOtherTracks = parentSong.querySelector(".play-record-checkbox").checked;
+
             this.stopTrack();
             if (playOtherTracks) {
                 parentSong.tracks.forEach((track) => {
@@ -708,7 +710,6 @@ class NewTrack extends SongTrack {
         const parentSong = this.closest("song-div");
 
         // prepare to play other tracks
-        const playOtherTracks = parentSong.querySelector(".play-record-checkbox");
         const playOtherTracksVolume = Number(parentSong.querySelector(".play-record-volume-slider").value / 100);
         const bpmInput = parentSong.querySelector(".bpm-input");
         const timeSignatureSelect = parentSong.querySelector(".time-signature-select");
@@ -740,10 +741,12 @@ class NewTrack extends SongTrack {
                 countDownDiv.innerHTML = `${baseText}<BR>&nbsp;`;
 
                 // prepare metronome
-                playMetronome = parentSong.querySelector(".metronome-checkbox");
+                playMetronome = parentSong.querySelector(".metronome-checkbox").checked;
                 if (playMetronome) {
                     metronome = createDrumLoop(beatsPerMeasure, bpm);
                 }
+
+                const playOtherTracks = parentSong.querySelector(".play-record-checkbox").checked;
 
                 this._countDown = setInterval(async () => {
                     counter++;
